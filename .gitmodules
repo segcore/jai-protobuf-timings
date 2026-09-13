@@ -1,0 +1,6 @@
+[submodule "jai/modules/Protobuf"]
+	path = jai/modules/Protobuf
+	url = https://github.com/segcore/jai-protobuf.git
+[submodule "cpp/protobuf"]
+	path = cpp/protobuf
+	url = https://github.com/protocolbuffers/protobuf.git

@@ -1,0 +1,4 @@
+.build
+jai/main
+*.exe
+cpp/build*

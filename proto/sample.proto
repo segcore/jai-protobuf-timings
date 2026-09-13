@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+// Ints have variable length encodings (VARINT)
+message Integers {
+  string id = 1;
+  repeated int32 ints = 2;
+  repeated sint32 zigzagged = 3;
+}
+
+// Floats have fixed length encodings (I32/I64)
+message Floats {
+  string id = 1;
+  repeated float floats = 2;
+  repeated double doubles = 3;
+}
+
+// Strings are treated as separate objects, even when repeated (LEN)
+message Strings {
+  string id = 1;
+  repeated string strings = 4;
+}
+
+message Maps {
+  map<int32, int32> map_int_to_int = 1;
+  map<int32, string> map_int_to_string = 2;
+  map<string, int32> map_string_to_int = 3;
+}
+
+// Submessages are treated as separate objects, even when repeated (LEN)
+message Submessage {
+  int32 i32a = 1;
+  int32 i32b = 2;
+  double f64a = 3;
+  double f64b = 4;
+  string text = 5;
+  TheEnum the_enum = 6;
+  bool the_bool = 7;
+
+  enum TheEnum {
+    ENUM_NONE = 0;
+    ENUM_A = 10;
+    ENUM_B = 20;
+  }
+}
+
+message Messages {
+  string id = 1;
+  repeated Integers subints = 2;
+  repeated Floats subfloats = 3;
+  repeated Submessage submessage = 4;
+}
