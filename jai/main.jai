@@ -3,7 +3,7 @@
 
 #insert #run generate_jai("../proto/sample.proto");
 
-REPEAT_COUNT :: 1;
+REPEAT_COUNT :: 5;
 FIELD_COUNT :: 1_000_000;
 MB :: 1024*1024;
 GB :: 1024*1024*1024;

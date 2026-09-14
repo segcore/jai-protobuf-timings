@@ -42,12 +42,12 @@ All times are in seconds.
 
 All times are in seconds.
 
-| Procedure                       | Create Object | Serialize           | Deserialize        | Cleanup | Total | Bytes                |
-| ---                             | ---           | ---                 | ---                | ---     | ---   | ---                  |
-| test_repeated_ints              | 0.004         | 0.003 (1.044 Gb/s)  | 0.004 (0.797 Gb/s) | 0.000   | 0.012 | 3788658 (3.6 Mb)     |
-| test_repeated_zigzag            | 0.004         | 0.003 (1.109 Gb/s)  | 0.004 (0.811 Gb/s) | 0.001   | 0.012 | 3894341 (3.7 Mb)     |
-| test_repeated_floats            | 0.003         | 0.000 (36.855 Gb/s) | 0.001 (5.538 Gb/s) | 0.000   | 0.003 | 4000021 (3.8 Mb)     |
-| test_repeated_strings           | 0.065         | 0.017 (1.976 Gb/s)  | 0.076 (0.452 Gb/s) | 0.048   | 0.206 | 36888913 (35.2 Mb)   |
-| test_repeated_maps_ints         | 0.131         | 0.076 (0.122 Gb/s)  | 0.042 (0.221 Gb/s) | 0.175   | 0.425 | 9966980 (9.5 Mb)     |
-| test_repeated_maps_with_strings | 0.643         | 0.504 (0.973 Gb/s)  | 0.468 (1.047 Gb/s) | 0.698   | 2.312 | 526105858 (501.7 Mb) |
-| test_submessages                | 0.035         | 0.027 (1.210 Gb/s)  | 0.073 (0.444 Gb/s) | 0.050   | 0.186 | 35000026 (33.4 Mb)   |
+| Procedure                       | Create Object | Serialize           | Deserialize         | Cleanup | Total | Bytes                |
+| ---                             | ---           | ---                 | ---                 | ---     | ---   | ---                  |
+| test_repeated_ints              | 0.004         | 0.003 (1.261 Gb/s)  | 0.004 (0.805 Gb/s)  | 0.000   | 0.011 | 3788658 (3.6 Mb)     |
+| test_repeated_zigzag            | 0.004         | 0.003 (1.174 Gb/s)  | 0.005 (0.767 Gb/s)  | 0.001   | 0.012 | 3894341 (3.7 Mb)     |
+| test_repeated_floats            | 0.002         | 0.000 (43.724 Gb/s) | 0.000 (36.848 Gb/s) | 0.000   | 0.003 | 4000021 (3.8 Mb)     |
+| test_repeated_strings           | 0.033         | 0.017 (1.975 Gb/s)  | 0.079 (0.434 Gb/s)  | 0.045   | 0.175 | 36888913 (35.2 Mb)   |
+| test_repeated_maps_ints         | 0.124         | 0.075 (0.123 Gb/s)  | 0.041 (0.226 Gb/s)  | 0.174   | 0.414 | 9966980 (9.5 Mb)     |
+| test_repeated_maps_with_strings | 0.489         | 0.493 (0.994 Gb/s)  | 0.275 (1.782 Gb/s)  | 0.688   | 1.945 | 526105858 (501.7 Mb) |
+| test_submessages                | 0.034         | 0.027 (1.218 Gb/s)  | 0.076 (0.428 Gb/s)  | 0.061   | 0.197 | 35000026 (33.4 Mb)   |

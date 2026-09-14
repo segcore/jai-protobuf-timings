@@ -9,7 +9,7 @@ double get_time() {
     return seconds;
 }
 
-constexpr int REPEAT_COUNT = 1;
+constexpr int REPEAT_COUNT = 5;
 constexpr int FIELD_COUNT = 1'000'000;
 constexpr int MB = 1024 * 1024;
 constexpr int GB = 1024 * 1024 * 1024;
