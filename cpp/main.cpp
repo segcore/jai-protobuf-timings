@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <chrono>
 #include <string>
+#include <string_view>
 
 double get_time() {
     auto time = std::chrono::steady_clock::now().time_since_epoch();
@@ -13,6 +14,7 @@ constexpr int REPEAT_COUNT = 5;
 constexpr int FIELD_COUNT = 1'000'000;
 constexpr int MB = 1024 * 1024;
 constexpr int GB = 1024 * 1024 * 1024;
+constexpr int MEMCOPY_SIZE = 4*MB;
 
 struct Timings {
     const char* procedure_name_;
@@ -34,10 +36,12 @@ Timings test_repeated_strings();
 Timings test_repeated_maps_ints();
 Timings test_repeated_maps_with_strings();
 Timings test_submessages();
+Timings test_memcopy();
 std::string string_with_length(int length);
 
 int main() {
     std::vector<Timings> results;
+    results.push_back(time(procedure_name(test_memcopy), test_memcopy));
     results.push_back(time(procedure_name(test_repeated_ints), test_repeated_ints));
     results.push_back(time(procedure_name(test_repeated_zigzag), test_repeated_zigzag));
     results.push_back(time(procedure_name(test_repeated_floats), test_repeated_floats));
@@ -48,12 +52,12 @@ int main() {
     printf("| Procedure | Create Object | Serialize | Deserialize | Cleanup | Total | Bytes |\n");
     printf("| --- | --- | --- | --- | --- | --- | --- |\n");
     for (const auto& it : results) {
-        printf("| %s | %5.3f | %5.3f (%5.3f Gb/s) | %5.3f (%5.3f Gb/s) | %5.3f | %5.3f | %llu (%.1f Mb) |\n", it.procedure_name_,
+        printf("| %-31s | %5.3f | %5.3f (%5.3f Gb/s) | %5.3f (%5.3f Gb/s) | %5.3f | %5.3f (%5.3f Gb/s) | %llu (%.1f Mb) |\n", it.procedure_name_,
                 it.create_object,
                 it.serialize, it.byte_count/it.serialize/GB,
                 it.deserialize, it.byte_count/it.deserialize/GB,
                 it.cleanup,
-                it.total,
+                it.total, it.byte_count/it.total/GB,
                 (unsigned long long)it.byte_count, 1.0*it.byte_count/MB
         );
     }
@@ -69,10 +73,10 @@ Timings time(const char* name, Timings(*fn)(void)) {
         best.serialize = std::min(best.serialize, this_run.serialize);
         best.deserialize = std::min(best.deserialize, this_run.deserialize);
         best.cleanup = std::min(best.cleanup, this_run.cleanup);
+        best.total = std::min(best.total, this_run.total);
     }
 
     best.procedure_name_ = name;
-    best.total = best.create_object + best.serialize + best.deserialize + best.cleanup;
     printf("=== %s ===\n", name);
     printf(" create object: %5.3fs\n", best.create_object);
     printf(" serialize:     %5.3fs (%5.3f Gb/s) %llu bytes (%.1f MB)\n", best.serialize, best.byte_count/best.serialize/GB, static_cast<unsigned long long>(best.byte_count), 1.0*best.byte_count/MB);
@@ -85,6 +89,7 @@ Timings time(const char* name, Timings(*fn)(void)) {
 
 Timings test_repeated_ints() {
     Timings timings{};
+    timings.total -= get_time();
 
     {
         timings.create_object -= get_time();
@@ -108,11 +113,13 @@ Timings test_repeated_ints() {
         timings.cleanup -= get_time();
     }
     timings.cleanup += get_time();
+    timings.total += get_time();
     return timings;
 }
 
 Timings test_repeated_zigzag() {
     Timings timings{};
+    timings.total -= get_time();
 
     {
         timings.create_object -= get_time();
@@ -136,11 +143,13 @@ Timings test_repeated_zigzag() {
         timings.cleanup -= get_time();
     }
     timings.cleanup += get_time();
+    timings.total += get_time();
     return timings;
 }
 
 Timings test_repeated_floats() {
     Timings timings{};
+    timings.total -= get_time();
 
     {
         timings.create_object -= get_time();
@@ -164,11 +173,13 @@ Timings test_repeated_floats() {
         timings.cleanup -= get_time();
     }
     timings.cleanup += get_time();
+    timings.total += get_time();
     return timings;
 }
 
 Timings test_repeated_strings() {
     Timings timings{};
+    timings.total -= get_time();
 
     {
         timings.create_object -= get_time();
@@ -193,11 +204,13 @@ Timings test_repeated_strings() {
         timings.cleanup -= get_time();
     }
     timings.cleanup += get_time();
+    timings.total += get_time();
     return timings;
 }
 
 Timings test_repeated_maps_ints() {
     Timings timings{};
+    timings.total -= get_time();
 
     {
         timings.create_object -= get_time();
@@ -220,17 +233,19 @@ Timings test_repeated_maps_ints() {
         timings.cleanup -= get_time();
     }
     timings.cleanup += get_time();
+    timings.total += get_time();
     return timings;
 }
 
 Timings test_repeated_maps_with_strings() {
     Timings timings{};
+    timings.total -= get_time();
 
     {
         timings.create_object -= get_time();
         Maps message;
         Maps decoded;
-        for (int i = 1; i <= FIELD_COUNT; i++) {
+        for (int i = 1; i <= FIELD_COUNT/10; i++) {
             (*message.mutable_map_int_to_string())[i] = string_with_length(i % 1000);
             (*message.mutable_map_string_to_int())["str" + std::to_string(i)] = i;
         }
@@ -248,11 +263,13 @@ Timings test_repeated_maps_with_strings() {
         timings.cleanup -= get_time();
     }
     timings.cleanup += get_time();
+    timings.total += get_time();
     return timings;
 }
 
 Timings test_submessages() {
     Timings timings{};
+    timings.total -= get_time();
 
     {
         timings.create_object -= get_time();
@@ -298,6 +315,60 @@ Timings test_submessages() {
         timings.cleanup -= get_time();
     }
     timings.cleanup += get_time();
+    timings.total += get_time();
+    return timings;
+}
+
+
+Timings test_memcopy() {
+    Timings timings{};
+    timings.total -= get_time();
+
+    // It would be nice to just do memcpy().
+    // All this is to try and avoid the optimiser just removing everything.
+    // There is most certainly a better way.
+    {
+        timings.create_object -= get_time();
+        Floats message;
+        Floats decoded;
+        message.set_id("Special Floats");
+        {
+            float value;
+            std::memset(&value, 1, sizeof(value));
+            message.mutable_floats()->resize(MEMCOPY_SIZE/sizeof(float), value);
+        }
+        timings.create_object += get_time();
+
+        std::string bytes = message.SerializeAsString();
+        timings.byte_count = bytes.size();
+
+        if (timings.byte_count < MEMCOPY_SIZE) {
+            printf("ERROR: Encoding too small. Test invalid. Got %d but expect ~%d\n", (int)timings.byte_count, MEMCOPY_SIZE);
+        }
+
+        std::string destination;
+        destination.reserve(bytes.size());
+        std::string_view dest_view{destination.data(), bytes.size()};
+        timings.serialize -= get_time();
+        // --- The actual test is here ---
+        std::memcpy(destination.data(), bytes.data(), bytes.size());
+        timings.serialize += get_time();
+
+        bytes[0] = 10; // don't re-use this buffer secretly
+        (void)decoded.ParseFromArray(dest_view.data(), dest_view.size());
+        (void)decoded.SerializeToString(&bytes);
+
+        timings.deserialize -= get_time();
+        int different = std::memcmp(bytes.data(), destination.data(), bytes.size());
+        timings.deserialize += get_time();
+        if (different) {
+            printf("ERROR: Serializations are different!\n");
+        }
+
+        timings.cleanup -= get_time();
+    }
+    timings.cleanup += get_time();
+    timings.total += get_time();
     return timings;
 }
 

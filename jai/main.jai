@@ -1,5 +1,7 @@
 #import "Protobuf";
-#import "Basic";
+#import "Basic"()(ENABLE_ASSERT=true);
+#import "String";
+#import "Flat_Pool";
 
 #insert #run generate_jai("../proto/sample.proto");
 
@@ -7,6 +9,7 @@ REPEAT_COUNT :: 5;
 FIELD_COUNT :: 1_000_000;
 MB :: 1024*1024;
 GB :: 1024*1024*1024;
+MEMCOPY_SIZE :: 4*MB;
 
 Timings :: struct {
     procedure_name: string;
@@ -23,58 +26,81 @@ get_time :: () -> float64 {
     return to_float64_seconds(time);
 }
 
+pool: Flat_Pool;
 main :: () {
     context.print_style.default_format_float.width = 5;
     context.print_style.default_format_float.trailing_width = 3;
     context.print_style.default_format_float.zero_removal = .NO;
 
     results: [..]Timings;
-    array_add(*results, time(#procedure_name(test_repeated_ints), test_repeated_ints));
-    array_add(*results, time(#procedure_name(test_repeated_zigzag), test_repeated_zigzag));
-    array_add(*results, time(#procedure_name(test_repeated_floats), test_repeated_floats));
-    array_add(*results, time(#procedure_name(test_repeated_strings), test_repeated_strings));
-    array_add(*results, time(#procedure_name(test_repeated_maps_ints), test_repeated_maps_ints));
-    array_add(*results, time(#procedure_name(test_repeated_maps_with_strings), test_repeated_maps_with_strings));
-    array_add(*results, time(#procedure_name(test_submessages), test_submessages));
+    results.allocator = context.default_allocator;
+
+    init(*pool, 4*GB);
+
+    time(*results, test_memcopy);
+    time(*results, test_repeated_ints);
+    time(*results, test_repeated_zigzag);
+    time(*results, test_repeated_floats);
+    time(*results, test_repeated_strings);
+    time(*results, test_repeated_maps_ints);
+    time(*results, test_repeated_maps_with_strings);
+    time(*results, test_submessages);
 
     print("| Procedure | Create Object | Serialize | Deserialize | Cleanup | Total | Bytes |\n");
     print("| --- | --- | --- | --- | --- | --- | --- |\n");
     for results {
-        print("| % | % | % (% Gb/s) | % (% Gb/s) | % | % | % (% Mb) |\n", it.procedure_name,
+        print("| %0%0 | % | % (% Gb/s) | % (% Gb/s) | % | % (% Gb/s) | % (% Mb) |\n", it.procedure_name, pad(it.procedure_name, 39),
                 it.create_object,
                 it.serialize, it.byte_count/it.serialize/GB,
                 it.deserialize, it.byte_count/it.deserialize/GB,
                 it.cleanup,
-                it.total,
-                it.byte_count, formatFloat(1.0*it.byte_count/MB, trailing_width=1)
+                it.total, it.byte_count/it.total/GB,
+                it.byte_count, formatFloat(1.0*it.byte_count/MB, trailing_width=1, zero_removal=.NO)
         );
     }
 }
 
-time :: (name: string, fn: () -> Timings) -> Timings {
-    best: Timings;
-    best = fn();
-    for 2..REPEAT_COUNT {
-        this_run := fn();
-        best.create_object = min(best.create_object, this_run.create_object);
-        best.serialize = min(best.serialize, this_run.serialize);
-        best.deserialize = min(best.deserialize, this_run.deserialize);
-        best.cleanup = min(best.cleanup, this_run.cleanup);
-    }
-    best.procedure_name = name;
-    best.total = best.create_object + best.serialize + best.deserialize + best.cleanup;
-    print("=== % ===\n", name);
-    print(" create object: %s\n", best.create_object);
-    print(" serialize:     %s (% Gb/s) % bytes (% Mb)\n", best.serialize, best.byte_count/best.serialize/GB, best.byte_count, formatFloat(1.0*best.byte_count/MB, trailing_width=1));
-    print(" deserialize:   %s (% Gb/s)\n", best.deserialize, best.byte_count/best.deserialize/GB);
-    print(" cleanup:       %s\n", best.cleanup);
-    print("total:          %s (% Gb/s)\n\n", best.total, best.byte_count/best.total/GB);
+time :: (results: *[..]Timings, $function: Code) {
+    procedure_name :: #procedure_name(#insert function);
+    fn :: #insert function;
+    for use_arena: 0..1 {
+        name := procedure_name;
+        if use_arena {
+            name = sprint("% (Arena)", procedure_name,, context.default_allocator);
+            context.allocator = .{flat_pool_allocator_proc, *pool};
+        } else {
+            context.allocator = context.default_allocator;
+        }
 
-    return best;
+        best: Timings;
+        for 1..REPEAT_COUNT {
+            this_run := fn();
+            if it == 1 {
+                best = this_run;
+            } else {
+                best.create_object = min(best.create_object, this_run.create_object);
+                best.serialize = min(best.serialize, this_run.serialize);
+                best.deserialize = min(best.deserialize, this_run.deserialize);
+                best.cleanup = min(best.cleanup, this_run.cleanup);
+                best.total = min(best.total, this_run.total);
+            }
+            reset(*pool);
+        }
+        best.procedure_name = name;
+        print("=== % ===\n", name);
+        print(" create object: %s\n", best.create_object);
+        print(" serialize:     %s (% Gb/s) % bytes (% Mb)\n", best.serialize, best.byte_count/best.serialize/GB, best.byte_count, formatFloat(1.0*best.byte_count/MB, trailing_width=1));
+        print(" deserialize:   %s (% Gb/s)\n", best.deserialize, best.byte_count/best.deserialize/GB);
+        print(" cleanup:       %s\n", best.cleanup);
+        print("total:          %s (% Gb/s)\n\n", best.total, best.byte_count/best.total/GB);
+
+        array_add(results, best);
+    }
 }
 
 test_repeated_ints :: () -> Timings {
     timings: Timings;
+    timings.total -= get_time();
 
     // message Integers {
     //   string id = 1;
@@ -105,11 +131,13 @@ test_repeated_ints :: () -> Timings {
     FreeContents(*decoded);
     array_free(bytes);
     timings.cleanup += get_time();
+    timings.total += get_time();
     return timings;
 }
 
 test_repeated_zigzag :: () -> Timings {
     timings: Timings;
+    timings.total -= get_time();
 
     timings.create_object -= get_time();
     message: Integers;
@@ -134,11 +162,13 @@ test_repeated_zigzag :: () -> Timings {
     FreeContents(*decoded);
     array_free(bytes);
     timings.cleanup += get_time();
+    timings.total += get_time();
     return timings;
 }
 
 test_repeated_floats :: () -> Timings {
     timings: Timings;
+    timings.total -= get_time();
 
     timings.create_object -= get_time();
     message: Floats;
@@ -163,11 +193,13 @@ test_repeated_floats :: () -> Timings {
     FreeContents(*decoded);
     array_free(bytes);
     timings.cleanup += get_time();
+    timings.total += get_time();
     return timings;
 }
 
 test_repeated_strings :: () -> Timings {
     timings: Timings;
+    timings.total -= get_time();
 
     timings.create_object -= get_time();
     message: Strings;
@@ -194,11 +226,13 @@ test_repeated_strings :: () -> Timings {
     array_free(bytes);
     reset_temporary_storage();
     timings.cleanup += get_time();
+    timings.total += get_time();
     return timings;
 }
 
 test_repeated_maps_ints :: () -> Timings {
     timings: Timings;
+    timings.total -= get_time();
 
     timings.create_object -= get_time();
     message: Maps;
@@ -225,16 +259,18 @@ test_repeated_maps_ints :: () -> Timings {
     array_free(bytes);
     reset_temporary_storage();
     timings.cleanup += get_time();
+    timings.total += get_time();
     return timings;
 }
 
 test_repeated_maps_with_strings :: () -> Timings {
     timings: Timings;
+    timings.total -= get_time();
 
     timings.create_object -= get_time();
     message: Maps;
     decoded: Maps;
-    for i: 1..FIELD_COUNT {
+    for i: 1..FIELD_COUNT/10 {
         table_set(*message.map_int_to_string, xx i, string_with_length(i % 1000));
         table_set(*message.map_string_to_int, tprint("str%", i), xx i);
     }
@@ -255,11 +291,13 @@ test_repeated_maps_with_strings :: () -> Timings {
     array_free(bytes);
     reset_temporary_storage();
     timings.cleanup += get_time();
+    timings.total += get_time();
     return timings;
 }
 
 test_submessages :: () -> Timings {
     timings: Timings;
+    timings.total -= get_time();
 
     timings.create_object -= get_time();
     message: Messages;
@@ -306,6 +344,57 @@ test_submessages :: () -> Timings {
     FreeContents(*decoded);
     array_free(bytes);
     timings.cleanup += get_time();
+    timings.total += get_time();
+    return timings;
+}
+
+test_memcopy :: () -> Timings {
+    timings: Timings;
+    timings.total -= get_time();
+
+    // It would be nice to just do memcpy().
+    // All this is to try and avoid the optimiser just removing everything.
+    // There is most certainly a better way.
+    timings.create_object -= get_time();
+    message: Floats;
+    decoded: Floats;
+    message.id = "Special Floats";
+    array_reserve(*message.floats, MEMCOPY_SIZE/size_of(float));
+    memset(*message.floats, 1, message.floats.count * size_of(type_of(message.floats[0])));
+    message.floats.count = message.floats.allocated;
+    timings.create_object += get_time();
+
+    bytes := Serialize(message);
+    timings.byte_count = bytes.count;
+
+    if (timings.byte_count < MEMCOPY_SIZE) {
+        print("ERROR: Encoding too small. Test invalid. Got % but expect ~%\n", timings.byte_count, MEMCOPY_SIZE);
+    }
+
+    destination := NewArray(bytes.count, u8, initialized=false);
+
+    timings.serialize -= get_time();
+    memcpy(destination.data, bytes.data, destination.count);
+    timings.serialize += get_time();
+
+    bytes[0] = 10; // don't re-use this buffer secretly
+    Deserialize(*decoded, destination);
+    Serialize(bytes, bytes.count, decoded); // serialize into bytes
+
+    timings.deserialize -= get_time();
+    different := memcmp(bytes.data, destination.data, bytes.count);
+    timings.deserialize += get_time();
+    if different {
+        print("ERROR: Serializations are different!\n");
+    }
+
+    timings.cleanup -= get_time();
+    FreeContents(*message);
+    FreeContents(*decoded);
+    array_free(bytes);
+    array_free(destination);
+    timings.cleanup += get_time();
+    timings.total += get_time();
     return timings;
 }
 
@@ -316,4 +405,10 @@ string_with_length :: (length: int) -> string {
         arr[i] = #char "A";
     }
     return xx arr;
+}
+
+pad :: (s: string, length: int) -> string {
+    spaces :: "                                                  ";
+    if s.count < length return slice(spaces, 0, length - s.count);
+    return "";
 }
