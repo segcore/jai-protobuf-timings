@@ -21,48 +21,48 @@ compiliation all happens at build time. All time is included in the total time.
 
 ## Run times (Release)
 
-All run times are in seconds.
+The best time is recorded for each section. All times are in *milliseconds*.
 
-| Procedure                               | Create Object | Serialize           | Deserialize         | Cleanup | Total              | Bytes              |
-| ---                                     | ---           | ---                 | ---                 | ---     | ---                | ---                |
-| test_memcopy                            | 0.000         | 0.001 (5.803 Gb/s)  | 0.000 (27.935 Gb/s) | 0.000   | 0.007 (0.540 Gb/s) | 4194325 (4.0 Mb)   |
-| test_memcopy (Arena)                    | 0.000         | 0.000 (43.809 Gb/s) | 0.000 (38.069 Gb/s) | 0.000   | 0.005 (0.850 Gb/s) | 4194325 (4.0 Mb)   |
-| test_repeated_ints                      | 0.003         | 0.010 (0.343 Gb/s)  | 0.011 (0.331 Gb/s)  | 0.000   | 0.025 (0.144 Gb/s) | 3788658 (3.6 Mb)   |
-| test_repeated_ints (Arena)              | 0.003         | 0.012 (0.289 Gb/s)  | 0.010 (0.360 Gb/s)  | 0.000   | 0.026 (0.135 Gb/s) | 3788658 (3.6 Mb)   |
-| test_repeated_zigzag                    | 0.004         | 0.013 (0.275 Gb/s)  | 0.011 (0.341 Gb/s)  | 0.000   | 0.029 (0.127 Gb/s) | 3894341 (3.7 Mb)   |
-| test_repeated_zigzag (Arena)            | 0.004         | 0.013 (0.288 Gb/s)  | 0.010 (0.374 Gb/s)  | 0.000   | 0.026 (0.138 Gb/s) | 3894341 (3.7 Mb)   |
-| test_repeated_floats                    | 0.004         | 0.001 (5.641 Gb/s)  | 0.005 (0.759 Gb/s)  | 0.000   | 0.010 (0.382 Gb/s) | 4000021 (3.8 Mb)   |
-| test_repeated_floats (Arena)            | 0.004         | 0.000 (15.765 Gb/s) | 0.004 (0.943 Gb/s)  | 0.000   | 0.008 (0.458 Gb/s) | 4000021 (3.8 Mb)   |
-| test_repeated_strings                   | 0.123         | 0.024 (1.450 Gb/s)  | 0.027 (1.296 Gb/s)  | 0.004   | 0.178 (0.194 Gb/s) | 36888913 (35.2 Mb) |
-| test_repeated_strings (Arena)           | 0.120         | 0.021 (1.622 Gb/s)  | 0.024 (1.425 Gb/s)  | 0.003   | 0.169 (0.204 Gb/s) | 36888913 (35.2 Mb) |
-| test_repeated_maps_ints                 | 0.044         | 0.054 (0.171 Gb/s)  | 0.082 (0.114 Gb/s)  | 0.000   | 0.181 (0.051 Gb/s) | 9966980 (9.5 Mb)   |
-| test_repeated_maps_ints (Arena)         | 0.043         | 0.053 (0.174 Gb/s)  | 0.078 (0.119 Gb/s)  | 0.000   | 0.177 (0.052 Gb/s) | 9966980 (9.5 Mb)   |
-| test_repeated_maps_with_strings         | 0.059         | 0.035 (1.390 Gb/s)  | 0.030 (1.631 Gb/s)  | 0.005   | 0.130 (0.376 Gb/s) | 52480857 (50.0 Mb) |
-| test_repeated_maps_with_strings (Arena) | 0.056         | 0.033 (1.480 Gb/s)  | 0.027 (1.793 Gb/s)  | 0.004   | 0.121 (0.404 Gb/s) | 52480857 (50.0 Mb) |
-| test_submessages                        | 0.018         | 0.110 (0.297 Gb/s)  | 0.120 (0.271 Gb/s)  | 0.000   | 0.249 (0.131 Gb/s) | 35000026 (33.4 Mb) |
-| test_submessages (Arena)                | 0.010         | 0.106 (0.307 Gb/s)  | 0.112 (0.292 Gb/s)  | 0.000   | 0.228 (0.143 Gb/s) | 35000026 (33.4 Mb) |
+| Procedure                               | Create Object | Serialize         | Deserialize       | Cleanup | Total             | Bytes              |
+| ---                                     | ---           | ---               | ---               | ---     | ---               | ---                |
+| test_memcopy                            | 0.0           | 0.7 (5.89 Gb/s)   | 0.1 (46.39 Gb/s)  | 0.2     | 2.4 (1.63 Gb/s)   | 4194325 (4.0 Mb)   |
+| test_memcopy (Arena)                    | 0.0           | 0.1 (47.15 Gb/s)  | 0.1 (47.58 Gb/s)  | 0.0     | 0.4 (9.44 Gb/s)   | 4194325 (4.0 Mb)   |
+| test_repeated_ints                      | 3.5           | 10.5 (0.34 Gb/s)  | 10.4 (0.34 Gb/s)  | 0.2     | 26.5 (0.13 Gb/s)  | 3788658 (3.6 Mb)   |
+| test_repeated_ints (Arena)              | 3.3           | 11.0 (0.32 Gb/s)  | 9.6 (0.37 Gb/s)   | 0.0     | 24.8 (0.14 Gb/s)  | 3788658 (3.6 Mb)   |
+| test_repeated_zigzag                    | 3.8           | 12.4 (0.29 Gb/s)  | 11.3 (0.32 Gb/s)  | 0.2     | 28.1 (0.13 Gb/s)  | 3894341 (3.7 Mb)   |
+| test_repeated_zigzag (Arena)            | 3.1           | 11.3 (0.32 Gb/s)  | 10.2 (0.36 Gb/s)  | 0.0     | 26.2 (0.14 Gb/s)  | 3894341 (3.7 Mb)   |
+| test_repeated_floats                    | 4.8           | 0.7 (5.64 Gb/s)   | 0.4 (9.00 Gb/s)   | 0.1     | 6.2 (0.61 Gb/s)   | 4000021 (3.8 Mb)   |
+| test_repeated_floats (Arena)            | 3.8           | 0.1 (41.56 Gb/s)  | 0.1 (32.08 Gb/s)  | 0.0     | 4.0 (0.93 Gb/s)   | 4000021 (3.8 Mb)   |
+| test_repeated_strings                   | 123.9         | 24.3 (1.42 Gb/s)  | 27.9 (1.23 Gb/s)  | 4.0     | 180.8 (0.19 Gb/s) | 36888913 (35.2 Mb) |
+| test_repeated_strings (Arena)           | 120.6         | 21.4 (1.61 Gb/s)  | 24.7 (1.39 Gb/s)  | 3.6     | 170.3 (0.20 Gb/s) | 36888913 (35.2 Mb) |
+| test_repeated_maps_ints                 | 46.6          | 55.3 (0.17 Gb/s)  | 83.0 (0.11 Gb/s)  | 0.4     | 188.1 (0.05 Gb/s) | 9966980 (9.5 Mb)   |
+| test_repeated_maps_ints (Arena)         | 42.8          | 54.3 (0.17 Gb/s)  | 79.7 (0.12 Gb/s)  | 0.0     | 178.6 (0.05 Gb/s) | 9966980 (9.5 Mb)   |
+| test_repeated_maps_with_strings         | 60.1          | 35.7 (1.37 Gb/s)  | 31.2 (1.57 Gb/s)  | 5.1     | 132.5 (0.37 Gb/s) | 52480857 (50.0 Mb) |
+| test_repeated_maps_with_strings (Arena) | 57.3          | 33.7 (1.45 Gb/s)  | 28.1 (1.74 Gb/s)  | 4.5     | 123.8 (0.39 Gb/s) | 52480857 (50.0 Mb) |
+| test_submessages                        | 17.7          | 110.1 (0.30 Gb/s) | 122.9 (0.27 Gb/s) | 0.5     | 252.6 (0.13 Gb/s) | 35000026 (33.4 Mb) |
+| test_submessages (Arena)                | 10.3          | 107.8 (0.30 Gb/s) | 114.3 (0.29 Gb/s) | 0.0     | 233.2 (0.14 Gb/s) | 35000026 (33.4 Mb) |
 
-Disabling asserts produce a noticable improvement with floats, strings, maps
-and submessages. Tested with:
+Disabling asserts produce a noticable improvement with strings, maps and
+submessages. Tested with:
 ```jai
 #import "Basic"()(ENABLE_ASSERT=false);
 ```
 
-| Procedure                               | Create Object | Serialize           | Deserialize         | Cleanup | Total              | Bytes              |
-| ---                                     | ---           | ---                 | ---                 | ---     | ---                | ---                |
-| test_memcopy                            | 0.000         | 0.001 (5.777 Gb/s)  | 0.000 (27.925 Gb/s) | 0.000   | 0.005 (0.809 Gb/s) | 4194325 (4.0 Mb)   |
-| test_memcopy (Arena)                    | 0.000         | 0.000 (44.565 Gb/s) | 0.000 (37.758 Gb/s) | 0.000   | 0.003 (1.440 Gb/s) | 4194325 (4.0 Mb)   |
-| test_repeated_ints                      | 0.001         | 0.011 (0.326 Gb/s)  | 0.006 (0.634 Gb/s)  | 0.000   | 0.018 (0.192 Gb/s) | 3788658 (3.6 Mb)   |
-| test_repeated_ints (Arena)              | 0.001         | 0.011 (0.335 Gb/s)  | 0.005 (0.754 Gb/s)  | 0.000   | 0.016 (0.219 Gb/s) | 3788658 (3.6 Mb)   |
-| test_repeated_zigzag                    | 0.001         | 0.012 (0.294 Gb/s)  | 0.006 (0.565 Gb/s)  | 0.000   | 0.020 (0.179 Gb/s) | 3894341 (3.7 Mb)   |
-| test_repeated_zigzag (Arena)            | 0.001         | 0.014 (0.269 Gb/s)  | 0.005 (0.660 Gb/s)  | 0.000   | 0.020 (0.180 Gb/s) | 3894341 (3.7 Mb)   |
-| test_repeated_floats                    | 0.001         | 0.001 (5.888 Gb/s)  | 0.002 (1.555 Gb/s)  | 0.000   | 0.005 (0.711 Gb/s) | 4000021 (3.8 Mb)   |
-| test_repeated_floats (Arena)            | 0.001         | 0.000 (24.477 Gb/s) | 0.002 (1.783 Gb/s)  | 0.000   | 0.003 (1.135 Gb/s) | 4000021 (3.8 Mb)   |
-| test_repeated_strings                   | 0.116         | 0.015 (2.272 Gb/s)  | 0.010 (3.575 Gb/s)  | 0.004   | 0.145 (0.236 Gb/s) | 36888913 (35.2 Mb) |
-| test_repeated_strings (Arena)           | 0.113         | 0.013 (2.565 Gb/s)  | 0.007 (4.775 Gb/s)  | 0.003   | 0.138 (0.248 Gb/s) | 36888913 (35.2 Mb) |
-| test_repeated_maps_ints                 | 0.042         | 0.031 (0.298 Gb/s)  | 0.052 (0.178 Gb/s)  | 0.000   | 0.126 (0.074 Gb/s) | 9966980 (9.5 Mb)   |
-| test_repeated_maps_ints (Arena)         | 0.039         | 0.033 (0.279 Gb/s)  | 0.049 (0.190 Gb/s)  | 0.000   | 0.121 (0.077 Gb/s) | 9966980 (9.5 Mb)   |
-| test_repeated_maps_with_strings         | 0.058         | 0.028 (1.721 Gb/s)  | 0.023 (2.168 Gb/s)  | 0.005   | 0.114 (0.427 Gb/s) | 52480857 (50.0 Mb) |
-| test_repeated_maps_with_strings (Arena) | 0.055         | 0.026 (1.883 Gb/s)  | 0.020 (2.470 Gb/s)  | 0.004   | 0.105 (0.464 Gb/s) | 52480857 (50.0 Mb) |
-| test_submessages                        | 0.014         | 0.065 (0.499 Gb/s)  | 0.049 (0.662 Gb/s)  | 0.001   | 0.130 (0.251 Gb/s) | 35000026 (33.4 Mb) |
-| test_submessages (Arena)                | 0.008         | 0.065 (0.503 Gb/s)  | 0.042 (0.769 Gb/s)  | 0.000   | 0.116 (0.282 Gb/s) | 35000026 (33.4 Mb) |
+| Procedure                               | Create Object | Serialize        | Deserialize      | Cleanup | Total             | Bytes              |
+| ---                                     | ---           | ---              | ---              | ---     | ---               | ---                |
+| test_memcopy                            | 0.0           | 0.7 (5.75 Gb/s)  | 0.1 (44.06 Gb/s) | 0.2     | 2.2 (1.78 Gb/s)   | 4194325 (4.0 Mb)   |
+| test_memcopy (Arena)                    | 0.0           | 0.1 (47.13 Gb/s) | 0.1 (47.52 Gb/s) | 0.0     | 0.4 (9.34 Gb/s)   | 4194325 (4.0 Mb)   |
+| test_repeated_ints                      | 1.7           | 12.0 (0.29 Gb/s) | 5.4 (0.65 Gb/s)  | 0.2     | 20.5 (0.17 Gb/s)  | 3788658 (3.6 Mb)   |
+| test_repeated_ints (Arena)              | 0.9           | 10.7 (0.33 Gb/s) | 4.5 (0.78 Gb/s)  | 0.0     | 16.2 (0.22 Gb/s)  | 3788658 (3.6 Mb)   |
+| test_repeated_zigzag                    | 1.7           | 13.8 (0.26 Gb/s) | 6.4 (0.56 Gb/s)  | 0.2     | 22.5 (0.16 Gb/s)  | 3894341 (3.7 Mb)   |
+| test_repeated_zigzag (Arena)            | 0.9           | 11.3 (0.32 Gb/s) | 5.6 (0.65 Gb/s)  | 0.0     | 17.9 (0.20 Gb/s)  | 3894341 (3.7 Mb)   |
+| test_repeated_floats                    | 1.7           | 0.7 (5.67 Gb/s)  | 0.3 (10.78 Gb/s) | 0.1     | 2.9 (1.27 Gb/s)   | 4000021 (3.8 Mb)   |
+| test_repeated_floats (Arena)            | 0.8           | 0.1 (43.81 Gb/s) | 0.1 (37.84 Gb/s) | 0.0     | 1.0 (3.84 Gb/s)   | 4000021 (3.8 Mb)   |
+| test_repeated_strings                   | 116.9         | 15.5 (2.22 Gb/s) | 10.2 (3.37 Gb/s) | 3.9     | 146.9 (0.23 Gb/s) | 36888913 (35.2 Mb) |
+| test_repeated_strings (Arena)           | 113.9         | 12.8 (2.68 Gb/s) | 7.3 (4.72 Gb/s)  | 3.5     | 137.8 (0.25 Gb/s) | 36888913 (35.2 Mb) |
+| test_repeated_maps_ints                 | 42.0          | 31.9 (0.29 Gb/s) | 52.3 (0.18 Gb/s) | 0.4     | 129.2 (0.07 Gb/s) | 9966980 (9.5 Mb)   |
+| test_repeated_maps_ints (Arena)         | 39.4          | 31.0 (0.30 Gb/s) | 49.7 (0.19 Gb/s) | 0.0     | 120.2 (0.08 Gb/s) | 9966980 (9.5 Mb)   |
+| test_repeated_maps_with_strings         | 59.0          | 28.5 (1.71 Gb/s) | 23.0 (2.13 Gb/s) | 5.0     | 115.9 (0.42 Gb/s) | 52480857 (50.0 Mb) |
+| test_repeated_maps_with_strings (Arena) | 55.5          | 26.2 (1.87 Gb/s) | 20.1 (2.43 Gb/s) | 4.4     | 106.4 (0.46 Gb/s) | 52480857 (50.0 Mb) |
+| test_submessages                        | 14.7          | 66.0 (0.49 Gb/s) | 49.7 (0.66 Gb/s) | 0.6     | 132.1 (0.25 Gb/s) | 35000026 (33.4 Mb) |
+| test_submessages (Arena)                | 8.4           | 63.0 (0.52 Gb/s) | 41.6 (0.78 Gb/s) | 0.0     | 113.4 (0.29 Gb/s) | 35000026 (33.4 Mb) |

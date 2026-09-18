@@ -5,7 +5,7 @@
 
 #insert #run generate_jai("../proto/sample.proto");
 
-REPEAT_COUNT :: 5;
+REPEAT_COUNT :: 15;
 FIELD_COUNT :: 1_000_000;
 MB :: 1024*1024;
 GB :: 1024*1024*1024;
@@ -29,7 +29,7 @@ get_time :: () -> float64 {
 pool: Flat_Pool;
 main :: () {
     context.print_style.default_format_float.width = 5;
-    context.print_style.default_format_float.trailing_width = 3;
+    context.print_style.default_format_float.trailing_width = 1;
     context.print_style.default_format_float.zero_removal = .NO;
 
     results: [..]Timings;
@@ -50,11 +50,11 @@ main :: () {
     print("| --- | --- | --- | --- | --- | --- | --- |\n");
     for results {
         print("| %0%0 | % | % (% Gb/s) | % (% Gb/s) | % | % (% Gb/s) | % (% Mb) |\n", it.procedure_name, pad(it.procedure_name, 39),
-                it.create_object,
-                it.serialize, it.byte_count/it.serialize/GB,
-                it.deserialize, it.byte_count/it.deserialize/GB,
-                it.cleanup,
-                it.total, it.byte_count/it.total/GB,
+                1000*it.create_object,
+                1000*it.serialize, format_gbps(it.byte_count/it.serialize/GB),
+                1000*it.deserialize, format_gbps(it.byte_count/it.deserialize/GB),
+                1000*it.cleanup,
+                1000*it.total, format_gbps(it.byte_count/it.total/GB),
                 it.byte_count, formatFloat(1.0*it.byte_count/MB, trailing_width=1, zero_removal=.NO)
         );
     }
@@ -88,11 +88,11 @@ time :: (results: *[..]Timings, $function: Code) {
         }
         best.procedure_name = name;
         print("=== % ===\n", name);
-        print(" create object: %s\n", best.create_object);
-        print(" serialize:     %s (% Gb/s) % bytes (% Mb)\n", best.serialize, best.byte_count/best.serialize/GB, best.byte_count, formatFloat(1.0*best.byte_count/MB, trailing_width=1));
-        print(" deserialize:   %s (% Gb/s)\n", best.deserialize, best.byte_count/best.deserialize/GB);
-        print(" cleanup:       %s\n", best.cleanup);
-        print("total:          %s (% Gb/s)\n\n", best.total, best.byte_count/best.total/GB);
+        print(" create object: %ms\n", 1000*best.create_object);
+        print(" serialize:     %ms (% Gb/s) % bytes (% Mb)\n", 1000*best.serialize, format_gbps(best.byte_count/best.serialize/GB), best.byte_count, formatFloat(1.0*best.byte_count/MB, trailing_width=1));
+        print(" deserialize:   %ms (% Gb/s)\n", 1000*best.deserialize, format_gbps(best.byte_count/best.deserialize/GB));
+        print(" cleanup:       %ms\n", 1000*best.cleanup);
+        print("total:          %ms (% Gb/s)\n\n", 1000*best.total, format_gbps(best.byte_count/best.total/GB));
 
         array_add(results, best);
     }
@@ -411,4 +411,9 @@ pad :: (s: string, length: int) -> string {
     spaces :: "                                                  ";
     if s.count < length return slice(spaces, 0, length - s.count);
     return "";
+}
+
+// #expand because formatInt takes the pointer to int, which would disappear in a regular function
+format_gbps :: (value: float64) -> FormatFloat #expand {
+    return formatFloat(value, width=4, trailing_width=2, zero_removal=.NO);
 }

@@ -10,7 +10,7 @@ double get_time() {
     return seconds;
 }
 
-constexpr int REPEAT_COUNT = 5;
+constexpr int REPEAT_COUNT = 15;
 constexpr int FIELD_COUNT = 1'000'000;
 constexpr int MB = 1024 * 1024;
 constexpr int GB = 1024 * 1024 * 1024;
@@ -52,12 +52,12 @@ int main() {
     printf("| Procedure | Create Object | Serialize | Deserialize | Cleanup | Total | Bytes |\n");
     printf("| --- | --- | --- | --- | --- | --- | --- |\n");
     for (const auto& it : results) {
-        printf("| %-31s | %5.3f | %5.3f (%5.3f Gb/s) | %5.3f (%5.3f Gb/s) | %5.3f | %5.3f (%5.3f Gb/s) | %llu (%.1f Mb) |\n", it.procedure_name_,
-                it.create_object,
-                it.serialize, it.byte_count/it.serialize/GB,
-                it.deserialize, it.byte_count/it.deserialize/GB,
-                it.cleanup,
-                it.total, it.byte_count/it.total/GB,
+        printf("| %-31s | %5.1f | %5.1f (%5.2f Gb/s) | %5.1f (%5.2f Gb/s) | %5.1f | %5.1f (%5.2f Gb/s) | %llu (%.1f Mb) |\n", it.procedure_name_,
+                1000*it.create_object,
+                1000*it.serialize, it.byte_count/it.serialize/GB,
+                1000*it.deserialize, it.byte_count/it.deserialize/GB,
+                1000*it.cleanup,
+                1000*it.total, it.byte_count/it.total/GB,
                 (unsigned long long)it.byte_count, 1.0*it.byte_count/MB
         );
     }
@@ -78,11 +78,11 @@ Timings time(const char* name, Timings(*fn)(void)) {
 
     best.procedure_name_ = name;
     printf("=== %s ===\n", name);
-    printf(" create object: %5.3fs\n", best.create_object);
-    printf(" serialize:     %5.3fs (%5.3f Gb/s) %llu bytes (%.1f MB)\n", best.serialize, best.byte_count/best.serialize/GB, static_cast<unsigned long long>(best.byte_count), 1.0*best.byte_count/MB);
-    printf(" deserialize:   %5.3fs (%5.3f Gb/s)\n", best.deserialize, best.byte_count/best.deserialize/GB);
-    printf(" cleanup:       %5.3fs\n", best.cleanup);
-    printf("total:          %5.3fs (%5.3f Gb/s)\n\n", best.total, best.byte_count/best.total/GB);
+    printf(" create object: %4.1fs\n", 1000*best.create_object);
+    printf(" serialize:     %4.1fs (%4.2f Gb/s) %llu bytes (%.1f MB)\n", 1000*best.serialize, best.byte_count/best.serialize/GB, static_cast<unsigned long long>(best.byte_count), 1.0*best.byte_count/MB);
+    printf(" deserialize:   %4.1fs (%4.2f Gb/s)\n", 1000*best.deserialize, best.byte_count/best.deserialize/GB);
+    printf(" cleanup:       %4.1fs\n", 1000*best.cleanup);
+    printf("total:          %4.1fs (%4.2f Gb/s)\n\n", 1000*best.total, best.byte_count/best.total/GB);
 
     return best;
 }
