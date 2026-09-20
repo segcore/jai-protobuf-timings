@@ -1,6 +1,6 @@
 # Jai Protobuf Results
 
-Compiled with
+Compiled with Jai compiler v0.2.030.
 
 ```sh
 time jai main.jai -x64 # Debug x64
@@ -17,7 +17,7 @@ compiliation all happens at build time. All time is included in the total time.
 | ---        | ---                  |
 | Debug x64  | 0.170                |
 | Debug LLVM | 0.316                |
-| Release    | 2.496                |
+| Release    | 2.774                |
 
 ## Run times (Release)
 
@@ -42,7 +42,7 @@ The best time is recorded for each section. All times are in *milliseconds*.
 | test_submessages                        | 17.7          | 35.3 (0.92 Gb/s) | 61.5 (0.53 Gb/s) | 0.5     | 115.6 (0.28 Gb/s) | 35000026 (33.4 Mb) |
 | test_submessages (Arena)                | 10.0          | 32.6 (1.00 Gb/s) | 52.9 (0.62 Gb/s) | 0.0     | 96.1 (0.34 Gb/s)  | 35000026 (33.4 Mb) |
 
-Disabling asserts produces a small deserialization speed increase.
+Disabling asserts can produce a small speed increase.
 Tested with:
 ```jai
 #import "Basic"()(ENABLE_ASSERT=false);
