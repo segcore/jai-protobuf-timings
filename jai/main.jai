@@ -63,7 +63,7 @@ main :: () {
     print("| Procedure | Create Object | Serialize | Deserialize | Cleanup | Total | Bytes |\n");
     print("| --- | --- | --- | --- | --- | --- | --- |\n");
     for results {
-        print("| %0%0 | % | % (% Gb/s) | % (% Gb/s) | % | % (% Gb/s) | % (% Mb) |\n", it.procedure_name, pad(it.procedure_name, 41),
+        print("| %0%0 | % | % (% GB/s) | % (% GB/s) | % | % (% GB/s) | % (% MB) |\n", it.procedure_name, pad(it.procedure_name, 41),
                 1000*it.create_object,
                 1000*it.serialize, format_gbps(it.byte_count/it.serialize/GB),
                 1000*it.deserialize, format_gbps(it.byte_count/it.deserialize/GB),
@@ -117,10 +117,10 @@ time :: (results: *[..]Timings, $function: Code) {
         best.procedure_name = name;
         print("=== % ===\n", name);
         print(" create object: %ms\n", 1000*best.create_object);
-        print(" serialize:     %ms (% Gb/s) % bytes (% Mb)\n", 1000*best.serialize, format_gbps(best.byte_count/best.serialize/GB), best.byte_count, formatFloat(1.0*best.byte_count/MB, trailing_width=1));
-        print(" deserialize:   %ms (% Gb/s)\n", 1000*best.deserialize, format_gbps(best.byte_count/best.deserialize/GB));
+        print(" serialize:     %ms (% GB/s) % bytes (% MB)\n", 1000*best.serialize, format_gbps(best.byte_count/best.serialize/GB), best.byte_count, formatFloat(1.0*best.byte_count/MB, trailing_width=1));
+        print(" deserialize:   %ms (% GB/s)\n", 1000*best.deserialize, format_gbps(best.byte_count/best.deserialize/GB));
         print(" cleanup:       %ms\n", 1000*best.cleanup);
-        print("total:          %ms (% Gb/s)\n\n", 1000*best.total, format_gbps(best.byte_count/best.total/GB));
+        print("total:          %ms (% GB/s)\n\n", 1000*best.total, format_gbps(best.byte_count/best.total/GB));
 
         array_add(results, best);
     }

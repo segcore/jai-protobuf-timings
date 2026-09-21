@@ -72,7 +72,7 @@ int main() {
     printf("| Procedure | Create Object | Serialize | Deserialize | Cleanup | Total | Bytes |\n");
     printf("| --- | --- | --- | --- | --- | --- | --- |\n");
     for (const auto& it : results) {
-        printf("| %-41s | %5.1f | %5.1f (%5.2f Gb/s) | %5.1f (%5.2f Gb/s) | %5.1f | %5.1f (%5.2f Gb/s) | %llu (%.1f Mb) |\n", it.procedure_name_.c_str(),
+        printf("| %-41s | %5.1f | %5.1f (%5.2f GB/s) | %5.1f (%5.2f GB/s) | %5.1f | %5.1f (%5.2f GB/s) | %llu (%.1f MB) |\n", it.procedure_name_.c_str(),
                 1000*it.create_object,
                 1000*it.serialize, it.byte_count/it.serialize/GB,
                 1000*it.deserialize, it.byte_count/it.deserialize/GB,
@@ -128,10 +128,10 @@ void time(std::vector<Timings>& results, const char* name, TestFunction fn) {
         best.procedure_name_ = procedure_name_;
         printf("=== %s ===\n", best.procedure_name_.c_str());
         printf(" create object: %4.1fs\n", 1000*best.create_object);
-        printf(" serialize:     %4.1fs (%4.2f Gb/s) %llu bytes (%.1f MB)\n", 1000*best.serialize, best.byte_count/best.serialize/GB, static_cast<unsigned long long>(best.byte_count), 1.0*best.byte_count/MB);
-        printf(" deserialize:   %4.1fs (%4.2f Gb/s)\n", 1000*best.deserialize, best.byte_count/best.deserialize/GB);
+        printf(" serialize:     %4.1fs (%4.2f GB/s) %llu bytes (%.1f MB)\n", 1000*best.serialize, best.byte_count/best.serialize/GB, static_cast<unsigned long long>(best.byte_count), 1.0*best.byte_count/MB);
+        printf(" deserialize:   %4.1fs (%4.2f GB/s)\n", 1000*best.deserialize, best.byte_count/best.deserialize/GB);
         printf(" cleanup:       %4.1fs\n", 1000*best.cleanup);
-        printf("total:          %4.1fs (%4.2f Gb/s)\n\n", 1000*best.total, best.byte_count/best.total/GB);
+        printf("total:          %4.1fs (%4.2f GB/s)\n\n", 1000*best.total, best.byte_count/best.total/GB);
 
         results.emplace_back(std::move(best));
     }
