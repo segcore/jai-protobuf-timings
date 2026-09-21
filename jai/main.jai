@@ -11,14 +11,6 @@ MB :: 1024*1024;
 GB :: 1024*1024*1024;
 MEMCOPY_SIZE :: 4*MB;
 
-TestType :: enum {
-    Default;
-    Arena;
-    Buffer;
-}
-
-TestFunction :: #type (preallocated_buffer: []u8) -> Timings;
-
 Timings :: struct {
     procedure_name: string;
     create_object: float64;
@@ -28,6 +20,20 @@ Timings :: struct {
     total: float64;
     byte_count: s64;
 }
+
+TestType :: enum {
+    Default;
+    Arena;
+    Buffer;
+}
+
+TestParams :: struct {
+    test_type: TestType;
+    preallocated_buffer: []u8;
+}
+
+TestFunction :: #type (preallocated_buffer: TestParams) -> Timings;
+
 
 get_time :: () -> float64 {
     time := current_time_monotonic();
@@ -80,6 +86,9 @@ time :: (results: *[..]Timings, $function: Code) {
         name := procedure_name;
         name = sprint("% (%)", procedure_name, test_type,, context.default_allocator);
 
+        params: TestParams;
+        params.test_type = test_type;
+
         test_parameters: []u8;
         if test_type == {
             case .Default; context.allocator = context.default_allocator;
@@ -88,12 +97,12 @@ time :: (results: *[..]Timings, $function: Code) {
                 // Can use any allocator, it will only affect the object itself
                 // context.allocator = context.default_allocator;
                 context.allocator = .{flat_pool_allocator_proc, *pool};
-                test_parameters = preallocated_buffer;
+                params.preallocated_buffer = preallocated_buffer;
         }
 
         best: Timings;
         for 1..REPEAT_COUNT {
-            this_run := fn(test_parameters);
+            this_run := fn(params);
             if it == 1 {
                 best = this_run;
             } else {
@@ -117,7 +126,7 @@ time :: (results: *[..]Timings, $function: Code) {
     }
 }
 
-test_repeated_ints :: (preallocated_buffer: []u8) -> Timings {
+test_repeated_ints :: (params: TestParams) -> Timings {
     timings: Timings;
     timings.total -= get_time();
 
@@ -137,9 +146,9 @@ test_repeated_ints :: (preallocated_buffer: []u8) -> Timings {
 
     timings.serialize -= get_time();
     bytes: []u8;
-    if preallocated_buffer {
-        index := Serialize(preallocated_buffer, preallocated_buffer.count, message);
-        bytes = encode_finish(preallocated_buffer, index);
+    if params.preallocated_buffer {
+        index := Serialize(params.preallocated_buffer, params.preallocated_buffer.count, message);
+        bytes = encode_finish(params.preallocated_buffer, index);
     } else {
         bytes = Serialize(message);
     }
@@ -152,15 +161,17 @@ test_repeated_ints :: (preallocated_buffer: []u8) -> Timings {
     timings.deserialize += get_time();
 
     timings.cleanup -= get_time();
-    FreeContents(*message);
-    FreeContents(*decoded);
-    if !preallocated_buffer array_free(bytes);
+    if params.test_type == .Default {
+        FreeContents(*message);
+        FreeContents(*decoded);
+        array_free(bytes);
+    }
     timings.cleanup += get_time();
     timings.total += get_time();
     return timings;
 }
 
-test_repeated_zigzag :: (preallocated_buffer: []u8) -> Timings {
+test_repeated_zigzag :: (params: TestParams) -> Timings {
     timings: Timings;
     timings.total -= get_time();
 
@@ -175,9 +186,9 @@ test_repeated_zigzag :: (preallocated_buffer: []u8) -> Timings {
 
     timings.serialize -= get_time();
     bytes: []u8;
-    if preallocated_buffer {
-        index := Serialize(preallocated_buffer, preallocated_buffer.count, message);
-        bytes = encode_finish(preallocated_buffer, index);
+    if params.preallocated_buffer {
+        index := Serialize(params.preallocated_buffer, params.preallocated_buffer.count, message);
+        bytes = encode_finish(params.preallocated_buffer, index);
     } else {
         bytes = Serialize(message);
     }
@@ -189,15 +200,17 @@ test_repeated_zigzag :: (preallocated_buffer: []u8) -> Timings {
     timings.deserialize += get_time();
 
     timings.cleanup -= get_time();
-    FreeContents(*message);
-    FreeContents(*decoded);
-    if !preallocated_buffer array_free(bytes);
+    if params.test_type == .Default {
+        FreeContents(*message);
+        FreeContents(*decoded);
+        array_free(bytes);
+    }
     timings.cleanup += get_time();
     timings.total += get_time();
     return timings;
 }
 
-test_repeated_floats :: (preallocated_buffer: []u8) -> Timings {
+test_repeated_floats :: (params: TestParams) -> Timings {
     timings: Timings;
     timings.total -= get_time();
 
@@ -212,9 +225,9 @@ test_repeated_floats :: (preallocated_buffer: []u8) -> Timings {
 
     timings.serialize -= get_time();
     bytes: []u8;
-    if preallocated_buffer {
-        index := Serialize(preallocated_buffer, preallocated_buffer.count, message);
-        bytes = encode_finish(preallocated_buffer, index);
+    if params.preallocated_buffer {
+        index := Serialize(params.preallocated_buffer, params.preallocated_buffer.count, message);
+        bytes = encode_finish(params.preallocated_buffer, index);
     } else {
         bytes = Serialize(message);
     }
@@ -226,15 +239,17 @@ test_repeated_floats :: (preallocated_buffer: []u8) -> Timings {
     timings.deserialize += get_time();
 
     timings.cleanup -= get_time();
-    FreeContents(*message);
-    FreeContents(*decoded);
-    if !preallocated_buffer array_free(bytes);
+    if params.test_type == .Default {
+        FreeContents(*message);
+        FreeContents(*decoded);
+        array_free(bytes);
+    }
     timings.cleanup += get_time();
     timings.total += get_time();
     return timings;
 }
 
-test_repeated_strings :: (preallocated_buffer: []u8) -> Timings {
+test_repeated_strings :: (params: TestParams) -> Timings {
     timings: Timings;
     timings.total -= get_time();
 
@@ -250,9 +265,9 @@ test_repeated_strings :: (preallocated_buffer: []u8) -> Timings {
 
     timings.serialize -= get_time();
     bytes: []u8;
-    if preallocated_buffer {
-        index := Serialize(preallocated_buffer, preallocated_buffer.count, message);
-        bytes = encode_finish(preallocated_buffer, index);
+    if params.preallocated_buffer {
+        index := Serialize(params.preallocated_buffer, params.preallocated_buffer.count, message);
+        bytes = encode_finish(params.preallocated_buffer, index);
     } else {
         bytes = Serialize(message);
     }
@@ -264,16 +279,18 @@ test_repeated_strings :: (preallocated_buffer: []u8) -> Timings {
     timings.deserialize += get_time();
 
     timings.cleanup -= get_time();
-    FreeContents(*message);
-    FreeContents(*decoded);
-    if !preallocated_buffer array_free(bytes);
+    if params.test_type == .Default {
+        FreeContents(*message);
+        FreeContents(*decoded);
+        array_free(bytes);
+    }
     reset_temporary_storage();
     timings.cleanup += get_time();
     timings.total += get_time();
     return timings;
 }
 
-test_repeated_maps_ints :: (preallocated_buffer: []u8) -> Timings {
+test_repeated_maps_ints :: (params: TestParams) -> Timings {
     timings: Timings;
     timings.total -= get_time();
 
@@ -289,9 +306,9 @@ test_repeated_maps_ints :: (preallocated_buffer: []u8) -> Timings {
 
     timings.serialize -= get_time();
     bytes: []u8;
-    if preallocated_buffer {
-        index := Serialize(preallocated_buffer, preallocated_buffer.count, message);
-        bytes = encode_finish(preallocated_buffer, index);
+    if params.preallocated_buffer {
+        index := Serialize(params.preallocated_buffer, params.preallocated_buffer.count, message);
+        bytes = encode_finish(params.preallocated_buffer, index);
     } else {
         bytes = Serialize(message);
     }
@@ -303,16 +320,18 @@ test_repeated_maps_ints :: (preallocated_buffer: []u8) -> Timings {
     timings.deserialize += get_time();
 
     timings.cleanup -= get_time();
-    FreeContents(*message);
-    FreeContents(*decoded);
-    if !preallocated_buffer array_free(bytes);
+    if params.test_type == .Default {
+        FreeContents(*message);
+        FreeContents(*decoded);
+        array_free(bytes);
+    }
     reset_temporary_storage();
     timings.cleanup += get_time();
     timings.total += get_time();
     return timings;
 }
 
-test_repeated_maps_with_strings :: (preallocated_buffer: []u8) -> Timings {
+test_repeated_maps_with_strings :: (params: TestParams) -> Timings {
     timings: Timings;
     timings.total -= get_time();
 
@@ -327,9 +346,9 @@ test_repeated_maps_with_strings :: (preallocated_buffer: []u8) -> Timings {
 
     timings.serialize -= get_time();
     bytes: []u8;
-    if preallocated_buffer {
-        index := Serialize(preallocated_buffer, preallocated_buffer.count, message);
-        bytes = encode_finish(preallocated_buffer, index);
+    if params.preallocated_buffer {
+        index := Serialize(params.preallocated_buffer, params.preallocated_buffer.count, message);
+        bytes = encode_finish(params.preallocated_buffer, index);
     } else {
         bytes = Serialize(message);
     }
@@ -341,16 +360,18 @@ test_repeated_maps_with_strings :: (preallocated_buffer: []u8) -> Timings {
     timings.deserialize += get_time();
 
     timings.cleanup -= get_time();
-    FreeContents(*message);
-    FreeContents(*decoded);
-    if !preallocated_buffer array_free(bytes);
+    if params.test_type == .Default {
+        FreeContents(*message);
+        FreeContents(*decoded);
+        array_free(bytes);
+    }
     reset_temporary_storage();
     timings.cleanup += get_time();
     timings.total += get_time();
     return timings;
 }
 
-test_submessages :: (preallocated_buffer: []u8) -> Timings {
+test_submessages :: (params: TestParams) -> Timings {
     timings: Timings;
     timings.total -= get_time();
 
@@ -387,9 +408,9 @@ test_submessages :: (preallocated_buffer: []u8) -> Timings {
 
     timings.serialize -= get_time();
     bytes: []u8;
-    if preallocated_buffer {
-        index := Serialize(preallocated_buffer, preallocated_buffer.count, message);
-        bytes = encode_finish(preallocated_buffer, index);
+    if params.preallocated_buffer {
+        index := Serialize(params.preallocated_buffer, params.preallocated_buffer.count, message);
+        bytes = encode_finish(params.preallocated_buffer, index);
     } else {
         bytes = Serialize(message);
     }
@@ -401,15 +422,17 @@ test_submessages :: (preallocated_buffer: []u8) -> Timings {
     timings.deserialize += get_time();
 
     timings.cleanup -= get_time();
-    FreeContents(*message);
-    FreeContents(*decoded);
-    if !preallocated_buffer array_free(bytes);
+    if params.test_type == .Default {
+        FreeContents(*message);
+        FreeContents(*decoded);
+        array_free(bytes);
+    }
     timings.cleanup += get_time();
     timings.total += get_time();
     return timings;
 }
 
-test_memcopy :: (preallocated_buffer: []u8) -> Timings {
+test_memcopy :: (params: TestParams) -> Timings {
     timings: Timings;
     timings.total -= get_time();
 
@@ -426,9 +449,9 @@ test_memcopy :: (preallocated_buffer: []u8) -> Timings {
     timings.create_object += get_time();
 
     bytes: []u8;
-    if preallocated_buffer {
-        index := Serialize(preallocated_buffer, preallocated_buffer.count, message);
-        bytes = encode_finish(preallocated_buffer, index);
+    if params.preallocated_buffer {
+        index := Serialize(params.preallocated_buffer, params.preallocated_buffer.count, message);
+        bytes = encode_finish(params.preallocated_buffer, index);
     } else {
         bytes = Serialize(message);
     }
@@ -456,9 +479,11 @@ test_memcopy :: (preallocated_buffer: []u8) -> Timings {
     }
 
     timings.cleanup -= get_time();
-    FreeContents(*message);
-    FreeContents(*decoded);
-    if !preallocated_buffer array_free(bytes);
+    if params.test_type == .Default {
+        FreeContents(*message);
+        FreeContents(*decoded);
+        array_free(bytes);
+    }
     array_free(destination);
     timings.cleanup += get_time();
     timings.total += get_time();
@@ -482,5 +507,5 @@ pad :: (s: string, length: int) -> string {
 
 // #expand because formatInt takes the pointer to int, which would disappear in a regular function
 format_gbps :: (value: float64) -> FormatFloat #expand {
-    return formatFloat(value, width=4, trailing_width=2, zero_removal=.NO);
+    return formatFloat(value, width=5, trailing_width=2, zero_removal=.NO);
 }
