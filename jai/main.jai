@@ -11,6 +11,14 @@ MB :: 1024*1024;
 GB :: 1024*1024*1024;
 MEMCOPY_SIZE :: 4*MB;
 
+TestType :: enum {
+    Default;
+    Arena;
+    Buffer;
+}
+
+TestFunction :: #type (preallocated_buffer: []u8) -> Timings;
+
 Timings :: struct {
     procedure_name: string;
     create_object: float64;
@@ -49,7 +57,7 @@ main :: () {
     print("| Procedure | Create Object | Serialize | Deserialize | Cleanup | Total | Bytes |\n");
     print("| --- | --- | --- | --- | --- | --- | --- |\n");
     for results {
-        print("| %0%0 | % | % (% Gb/s) | % (% Gb/s) | % | % (% Gb/s) | % (% Mb) |\n", it.procedure_name, pad(it.procedure_name, 39),
+        print("| %0%0 | % | % (% Gb/s) | % (% Gb/s) | % | % (% Gb/s) | % (% Mb) |\n", it.procedure_name, pad(it.procedure_name, 41),
                 1000*it.create_object,
                 1000*it.serialize, format_gbps(it.byte_count/it.serialize/GB),
                 1000*it.deserialize, format_gbps(it.byte_count/it.deserialize/GB),
@@ -62,19 +70,30 @@ main :: () {
 
 time :: (results: *[..]Timings, $function: Code) {
     procedure_name :: #procedure_name(#insert function);
-    fn :: #insert function;
-    for use_arena: 0..1 {
+    fn : TestFunction : #insert function;
+
+    preallocated_buffer := NewArray(GB, u8, initialized=false);
+    defer array_free(preallocated_buffer);
+
+    for test_type_int : enum_values_as_s64(TestType) {
+        test_type := cast(TestType, test_type_int);
         name := procedure_name;
-        if use_arena {
-            name = sprint("% (Arena)", procedure_name,, context.default_allocator);
-            context.allocator = .{flat_pool_allocator_proc, *pool};
-        } else {
-            context.allocator = context.default_allocator;
+        name = sprint("% (%)", procedure_name, test_type,, context.default_allocator);
+
+        test_parameters: []u8;
+        if test_type == {
+            case .Default; context.allocator = context.default_allocator;
+            case .Arena; context.allocator = .{flat_pool_allocator_proc, *pool};
+            case .Buffer;
+                // Can use any allocator, it will only affect the object itself
+                // context.allocator = context.default_allocator;
+                context.allocator = .{flat_pool_allocator_proc, *pool};
+                test_parameters = preallocated_buffer;
         }
 
         best: Timings;
         for 1..REPEAT_COUNT {
-            this_run := fn();
+            this_run := fn(test_parameters);
             if it == 1 {
                 best = this_run;
             } else {
@@ -98,7 +117,7 @@ time :: (results: *[..]Timings, $function: Code) {
     }
 }
 
-test_repeated_ints :: () -> Timings {
+test_repeated_ints :: (preallocated_buffer: []u8) -> Timings {
     timings: Timings;
     timings.total -= get_time();
 
@@ -117,7 +136,13 @@ test_repeated_ints :: () -> Timings {
     timings.create_object += get_time();
 
     timings.serialize -= get_time();
-    bytes := Serialize(message);
+    bytes: []u8;
+    if preallocated_buffer {
+        index := Serialize(preallocated_buffer, preallocated_buffer.count, message);
+        bytes = encode_finish(preallocated_buffer, index);
+    } else {
+        bytes = Serialize(message);
+    }
     timings.byte_count = bytes.count;
     timings.serialize += get_time();
 
@@ -129,13 +154,13 @@ test_repeated_ints :: () -> Timings {
     timings.cleanup -= get_time();
     FreeContents(*message);
     FreeContents(*decoded);
-    array_free(bytes);
+    if !preallocated_buffer array_free(bytes);
     timings.cleanup += get_time();
     timings.total += get_time();
     return timings;
 }
 
-test_repeated_zigzag :: () -> Timings {
+test_repeated_zigzag :: (preallocated_buffer: []u8) -> Timings {
     timings: Timings;
     timings.total -= get_time();
 
@@ -149,7 +174,13 @@ test_repeated_zigzag :: () -> Timings {
     timings.create_object += get_time();
 
     timings.serialize -= get_time();
-    bytes := Serialize(message);
+    bytes: []u8;
+    if preallocated_buffer {
+        index := Serialize(preallocated_buffer, preallocated_buffer.count, message);
+        bytes = encode_finish(preallocated_buffer, index);
+    } else {
+        bytes = Serialize(message);
+    }
     timings.byte_count = bytes.count;
     timings.serialize += get_time();
 
@@ -160,13 +191,13 @@ test_repeated_zigzag :: () -> Timings {
     timings.cleanup -= get_time();
     FreeContents(*message);
     FreeContents(*decoded);
-    array_free(bytes);
+    if !preallocated_buffer array_free(bytes);
     timings.cleanup += get_time();
     timings.total += get_time();
     return timings;
 }
 
-test_repeated_floats :: () -> Timings {
+test_repeated_floats :: (preallocated_buffer: []u8) -> Timings {
     timings: Timings;
     timings.total -= get_time();
 
@@ -180,7 +211,13 @@ test_repeated_floats :: () -> Timings {
     timings.create_object += get_time();
 
     timings.serialize -= get_time();
-    bytes := Serialize(message);
+    bytes: []u8;
+    if preallocated_buffer {
+        index := Serialize(preallocated_buffer, preallocated_buffer.count, message);
+        bytes = encode_finish(preallocated_buffer, index);
+    } else {
+        bytes = Serialize(message);
+    }
     timings.byte_count = bytes.count;
     timings.serialize += get_time();
 
@@ -191,13 +228,13 @@ test_repeated_floats :: () -> Timings {
     timings.cleanup -= get_time();
     FreeContents(*message);
     FreeContents(*decoded);
-    array_free(bytes);
+    if !preallocated_buffer array_free(bytes);
     timings.cleanup += get_time();
     timings.total += get_time();
     return timings;
 }
 
-test_repeated_strings :: () -> Timings {
+test_repeated_strings :: (preallocated_buffer: []u8) -> Timings {
     timings: Timings;
     timings.total -= get_time();
 
@@ -212,7 +249,13 @@ test_repeated_strings :: () -> Timings {
     timings.create_object += get_time();
 
     timings.serialize -= get_time();
-    bytes := Serialize(message);
+    bytes: []u8;
+    if preallocated_buffer {
+        index := Serialize(preallocated_buffer, preallocated_buffer.count, message);
+        bytes = encode_finish(preallocated_buffer, index);
+    } else {
+        bytes = Serialize(message);
+    }
     timings.byte_count = bytes.count;
     timings.serialize += get_time();
 
@@ -223,14 +266,14 @@ test_repeated_strings :: () -> Timings {
     timings.cleanup -= get_time();
     FreeContents(*message);
     FreeContents(*decoded);
-    array_free(bytes);
+    if !preallocated_buffer array_free(bytes);
     reset_temporary_storage();
     timings.cleanup += get_time();
     timings.total += get_time();
     return timings;
 }
 
-test_repeated_maps_ints :: () -> Timings {
+test_repeated_maps_ints :: (preallocated_buffer: []u8) -> Timings {
     timings: Timings;
     timings.total -= get_time();
 
@@ -245,7 +288,13 @@ test_repeated_maps_ints :: () -> Timings {
     timings.create_object += get_time();
 
     timings.serialize -= get_time();
-    bytes := Serialize(message);
+    bytes: []u8;
+    if preallocated_buffer {
+        index := Serialize(preallocated_buffer, preallocated_buffer.count, message);
+        bytes = encode_finish(preallocated_buffer, index);
+    } else {
+        bytes = Serialize(message);
+    }
     timings.byte_count = bytes.count;
     timings.serialize += get_time();
 
@@ -256,14 +305,14 @@ test_repeated_maps_ints :: () -> Timings {
     timings.cleanup -= get_time();
     FreeContents(*message);
     FreeContents(*decoded);
-    array_free(bytes);
+    if !preallocated_buffer array_free(bytes);
     reset_temporary_storage();
     timings.cleanup += get_time();
     timings.total += get_time();
     return timings;
 }
 
-test_repeated_maps_with_strings :: () -> Timings {
+test_repeated_maps_with_strings :: (preallocated_buffer: []u8) -> Timings {
     timings: Timings;
     timings.total -= get_time();
 
@@ -277,7 +326,13 @@ test_repeated_maps_with_strings :: () -> Timings {
     timings.create_object += get_time();
 
     timings.serialize -= get_time();
-    bytes := Serialize(message);
+    bytes: []u8;
+    if preallocated_buffer {
+        index := Serialize(preallocated_buffer, preallocated_buffer.count, message);
+        bytes = encode_finish(preallocated_buffer, index);
+    } else {
+        bytes = Serialize(message);
+    }
     timings.byte_count = bytes.count;
     timings.serialize += get_time();
 
@@ -288,14 +343,14 @@ test_repeated_maps_with_strings :: () -> Timings {
     timings.cleanup -= get_time();
     FreeContents(*message);
     FreeContents(*decoded);
-    array_free(bytes);
+    if !preallocated_buffer array_free(bytes);
     reset_temporary_storage();
     timings.cleanup += get_time();
     timings.total += get_time();
     return timings;
 }
 
-test_submessages :: () -> Timings {
+test_submessages :: (preallocated_buffer: []u8) -> Timings {
     timings: Timings;
     timings.total -= get_time();
 
@@ -331,7 +386,13 @@ test_submessages :: () -> Timings {
     timings.create_object += get_time();
 
     timings.serialize -= get_time();
-    bytes := Serialize(message);
+    bytes: []u8;
+    if preallocated_buffer {
+        index := Serialize(preallocated_buffer, preallocated_buffer.count, message);
+        bytes = encode_finish(preallocated_buffer, index);
+    } else {
+        bytes = Serialize(message);
+    }
     timings.byte_count = bytes.count;
     timings.serialize += get_time();
 
@@ -342,13 +403,13 @@ test_submessages :: () -> Timings {
     timings.cleanup -= get_time();
     FreeContents(*message);
     FreeContents(*decoded);
-    array_free(bytes);
+    if !preallocated_buffer array_free(bytes);
     timings.cleanup += get_time();
     timings.total += get_time();
     return timings;
 }
 
-test_memcopy :: () -> Timings {
+test_memcopy :: (preallocated_buffer: []u8) -> Timings {
     timings: Timings;
     timings.total -= get_time();
 
@@ -364,7 +425,13 @@ test_memcopy :: () -> Timings {
     message.floats.count = message.floats.allocated;
     timings.create_object += get_time();
 
-    bytes := Serialize(message);
+    bytes: []u8;
+    if preallocated_buffer {
+        index := Serialize(preallocated_buffer, preallocated_buffer.count, message);
+        bytes = encode_finish(preallocated_buffer, index);
+    } else {
+        bytes = Serialize(message);
+    }
     timings.byte_count = bytes.count;
 
     if (timings.byte_count < MEMCOPY_SIZE) {
@@ -391,7 +458,7 @@ test_memcopy :: () -> Timings {
     timings.cleanup -= get_time();
     FreeContents(*message);
     FreeContents(*decoded);
-    array_free(bytes);
+    if !preallocated_buffer array_free(bytes);
     array_free(destination);
     timings.cleanup += get_time();
     timings.total += get_time();
