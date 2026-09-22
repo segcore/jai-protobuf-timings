@@ -15,7 +15,7 @@ milliseconds. Lower is better.
 
 ```mermaid
 gantt
-    title test_repeated_ints
+    title test_repeated_ints (3.6 MB)
     dateFormat x
     axisFormat %s.%L ms
     section Serialize
@@ -48,7 +48,7 @@ gantt
 
 ```mermaid
 gantt
-    title test_repeated_zigzag
+    title test_repeated_zigzag (3.7 MB)
     dateFormat x
     axisFormat %s.%L ms
     section Serialize
@@ -81,7 +81,7 @@ gantt
 
 ```mermaid
 gantt
-    title test_repeated_floats
+    title test_repeated_floats (3.8 MB)
     dateFormat x
     axisFormat %s.%L ms
     section Serialize
@@ -114,7 +114,7 @@ gantt
 
 ```mermaid
 gantt
-    title test_repeated_strings
+    title test_repeated_strings (35.2 MB)
     dateFormat x
     axisFormat %s.%L ms
     section Serialize
@@ -147,7 +147,7 @@ gantt
 
 ```mermaid
 gantt
-    title test_repeated_maps_ints
+    title test_repeated_maps_ints (9.5 MB)
     dateFormat x
     axisFormat %s.%L ms
     section Serialize
@@ -180,7 +180,7 @@ gantt
 
 ```mermaid
 gantt
-    title test_repeated_maps_with_strings
+    title test_repeated_maps_with_strings (50.0 MB)
     dateFormat x
     axisFormat %s.%L ms
     section Serialize
@@ -213,7 +213,7 @@ gantt
 
 ```mermaid
 gantt
-    title test_submessages
+    title test_submessages (33.4 MB)
     dateFormat x
     axisFormat %s.%L ms
     section Serialize

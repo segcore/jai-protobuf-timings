@@ -4,6 +4,8 @@
 
 #insert #run generate_jai("./proto/test_results.proto");
 
+MB :: 1024*1024;
+
 INPUT_PATHS :: string.["jai/results.pb", "jai/results-no-assert.pb", "cpp/results.pb"];
 
 main :: () {
@@ -93,13 +95,18 @@ format2 :: (all_sources: []TestResults, test_names: []string) {
     ];
 
     for test_name : test_names {
+        byte_count := 0;
+        for source: all_sources for testcase: source.results if testcase.name == test_name {
+            byte_count = testcase.byte_count;
+            break source;
+        }
         print(#string,\% END
 ```mermaid
 gantt
-    title %
+    title % (% MB)
     dateFormat x
     axisFormat \%s.\%L ms
-END, test_name);
+END, test_name, formatFloat(1.0*byte_count/MB, trailing_width=1, zero_removal=.NO));
         for time_type : enum_values_as_enum(TimeType) {
             if time_type == .CreateObject then continue; // skip this for now
             print("    section %\n", time_type);
