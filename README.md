@@ -42,6 +42,8 @@ gantt
         Jai Default : 0, 0.280529s
         Jai (no asserts) Default :active, 0, 0.257511s
         C++ Default :done, 0, 0.470621s
+    section Markers
+        10ms : milestone, m1, 0, 20s
 ```
 
 ```mermaid
@@ -73,6 +75,8 @@ gantt
         Jai Default : 0, 0.250407s
         Jai (no asserts) Default :active, 0, 0.250871s
         C++ Default :done, 0, 0.500755s
+    section Markers
+        10ms : milestone, m1, 0, 20s
 ```
 
 ```mermaid
@@ -104,6 +108,8 @@ gantt
         Jai Default : 0, 0.144029s
         Jai (no asserts) Default :active, 0, 0.138152s
         C++ Default :done, 0, 0.000147s
+    section Markers
+        10ms : milestone, m1, 0, 20s
 ```
 
 ```mermaid
@@ -135,6 +141,8 @@ gantt
         Jai Default : 0, 4.256266s
         Jai (no asserts) Default :active, 0, 4.273207s
         C++ Default :done, 0, 46.026607s
+    section Markers
+        10ms : milestone, m1, 0, 20s
 ```
 
 ```mermaid
@@ -166,6 +174,8 @@ gantt
         Jai Default : 0, 0.563285s
         Jai (no asserts) Default :active, 0, 0.601231s
         C++ Default :done, 0, 180.168408s
+    section Markers
+        10ms : milestone, m1, 0, 20s
 ```
 
 ```mermaid
@@ -197,6 +207,8 @@ gantt
         Jai Default : 0, 5.462001s
         Jai (no asserts) Default :active, 0, 5.271969s
         C++ Default :done, 0, 46.440122s
+    section Markers
+        10ms : milestone, m1, 0, 20s
 ```
 
 ```mermaid
@@ -228,4 +240,6 @@ gantt
         Jai Default : 0, 0.651492s
         Jai (no asserts) Default :active, 0, 0.637524s
         C++ Default :done, 0, 55.361613s
+    section Markers
+        10ms : milestone, m1, 0, 20s
 ```

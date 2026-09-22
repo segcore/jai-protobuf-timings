@@ -101,6 +101,7 @@ gantt
     axisFormat \%s.\%L ms
 END, test_name);
         for time_type : enum_values_as_enum(TimeType) {
+            if time_type == .CreateObject then continue; // skip this for now
             print("    section %\n", time_type);
             for source, format_index : all_sources {
                 for testcase : source.results {
@@ -111,7 +112,7 @@ END, test_name);
                         if #complete time_type == {
                         case .Serialize; time = 1000*plot.serialize;
                         case .Deserialize; time = 1000*plot.deserialize;
-                        case .CreateObject; time = 1000*plot.create_object; continue; // ignore for plots
+                        case .CreateObject; time = 1000*plot.create_object; if testcase.test_type != .Default then continue;
                         case .Cleanup; time = 1000*plot.cleanup; if testcase.test_type != .Default then continue;
                         }
                         format := formatting_options[format_index % formatting_options.count];
@@ -121,6 +122,7 @@ END, test_name);
             }
 
         }
+        write_string("    section Markers\n        10ms : milestone, m1, 0, 20s\n");
         write_string("```\n\n");
     }
 }
