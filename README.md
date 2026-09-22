@@ -38,10 +38,6 @@ gantt
         C++ Default :done, 0, 4.126291s
         C++ Arena :done, 0, 3.086156s
         C++ Buffer :done, 0, 3.042525s
-    section CreateObject
-        Jai Default : 0, 4.617303s
-        Jai (no asserts) Default :active, 0, 1.901313s
-        C++ Default :done, 0, 3.786808s
     section Cleanup
         Jai Default : 0, 0.280529s
         Jai (no asserts) Default :active, 0, 0.257511s
@@ -73,10 +69,6 @@ gantt
         C++ Default :done, 0, 5.11038s
         C++ Arena :done, 0, 4.079433s
         C++ Buffer :done, 0, 4.16002s
-    section CreateObject
-        Jai Default : 0, 4.958642s
-        Jai (no asserts) Default :active, 0, 2.001665s
-        C++ Default :done, 0, 3.811991s
     section Cleanup
         Jai Default : 0, 0.250407s
         Jai (no asserts) Default :active, 0, 0.250871s
@@ -108,10 +100,6 @@ gantt
         C++ Default :done, 0, 0.165609s
         C++ Arena :done, 0, 0.220165s
         C++ Buffer :done, 0, 0.216729s
-    section CreateObject
-        Jai Default : 0, 4.83192s
-        Jai (no asserts) Default :active, 0, 1.985721s
-        C++ Default :done, 0, 2.346358s
     section Cleanup
         Jai Default : 0, 0.144029s
         Jai (no asserts) Default :active, 0, 0.138152s
@@ -143,10 +131,6 @@ gantt
         C++ Default :done, 0, 81.873521s
         C++ Arena :done, 0, 39.423258s
         C++ Buffer :done, 0, 37.999314s
-    section CreateObject
-        Jai Default : 0, 131.893067s
-        Jai (no asserts) Default :active, 0, 118.391966s
-        C++ Default :done, 0, 39.129332s
     section Cleanup
         Jai Default : 0, 4.256266s
         Jai (no asserts) Default :active, 0, 4.273207s
@@ -178,10 +162,6 @@ gantt
         C++ Default :done, 0, 43.560041s
         C++ Arena :done, 0, 30.420694s
         C++ Buffer :done, 0, 30.746373s
-    section CreateObject
-        Jai Default : 0, 49.926626s
-        Jai (no asserts) Default :active, 0, 43.420958s
-        C++ Default :done, 0, 137.496343s
     section Cleanup
         Jai Default : 0, 0.563285s
         Jai (no asserts) Default :active, 0, 0.601231s
@@ -213,10 +193,6 @@ gantt
         C++ Default :done, 0, 26.229072s
         C++ Arena :done, 0, 17.436432s
         C++ Buffer :done, 0, 17.309293s
-    section CreateObject
-        Jai Default : 0, 61.935091s
-        Jai (no asserts) Default :active, 0, 60.129677s
-        C++ Default :done, 0, 28.487741s
     section Cleanup
         Jai Default : 0, 5.462001s
         Jai (no asserts) Default :active, 0, 5.271969s
@@ -248,10 +224,6 @@ gantt
         C++ Default :done, 0, 117.123226s
         C++ Arena :done, 0, 50.361708s
         C++ Buffer :done, 0, 49.948575s
-    section CreateObject
-        Jai Default : 0, 18.880748s
-        Jai (no asserts) Default :active, 0, 15.617636s
-        C++ Default :done, 0, 35.486384s
     section Cleanup
         Jai Default : 0, 0.651492s
         Jai (no asserts) Default :active, 0, 0.637524s

@@ -111,7 +111,7 @@ END, test_name);
                         if #complete time_type == {
                         case .Serialize; time = 1000*plot.serialize;
                         case .Deserialize; time = 1000*plot.deserialize;
-                        case .CreateObject; time = 1000*plot.create_object; if testcase.test_type != .Default then continue;
+                        case .CreateObject; time = 1000*plot.create_object; continue; // ignore for plots
                         case .Cleanup; time = 1000*plot.cleanup; if testcase.test_type != .Default then continue;
                         }
                         format := formatting_options[format_index % formatting_options.count];
