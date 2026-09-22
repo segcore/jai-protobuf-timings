@@ -35,8 +35,8 @@ All times are in seconds.
 
 | Target  | First Build | Incremental main.cpp | Incremental .proto |
 | ---     | ---         | ---                  | ---                |
-| Debug   | 63.220      | 2.698                | 3.417              |
-| Release | 108.758     | 2.393                | 3.657              |
+| Debug   | 114.909     | 2.931                | 3.459              |
+| Release | 121.921     | 2.697                | 3.727              |
 
 ## Run times (Release)
 
@@ -49,27 +49,27 @@ Three memory allocation strategies are tested.
 
 | Procedure                                 | Create Object | Serialize         | Deserialize        | Cleanup | Total              | Bytes              |
 | ---                                       | ---           | ---               | ---                | ---     | ---                | ---                |
-| test_memcopy (Default)                    | 0.3           | 0.3 (13.27 GB/s)  | 0.1 (38.32 GB/s)   | 0.1     | 1.8 ( 2.16 GB/s)   | 4194325 (4.0 MB)   |
-| test_memcopy (Arena)                      | 0.2           | 0.2 (16.96 GB/s)  | 0.1 (45.80 GB/s)   | 0.1     | 2.2 ( 1.76 GB/s)   | 4194325 (4.0 MB)   |
-| test_memcopy (Buffer)                     | 0.1           | 0.1 (32.83 GB/s)  | 0.1 (42.63 GB/s)   | 0.0     | 0.7 ( 5.32 GB/s)   | 4194325 (4.0 MB)   |
-| test_repeated_ints (Default)              | 2.3           | 2.9 ( 1.23 GB/s)  | 3.4 ( 1.03 GB/s)   | 0.1     | 9.4 ( 0.37 GB/s)   | 3788658 (3.6 MB)   |
-| test_repeated_ints (Arena)                | 2.5           | 2.9 ( 1.23 GB/s)  | 3.2 ( 1.11 GB/s)   | 0.0     | 8.7 ( 0.41 GB/s)   | 3788658 (3.6 MB)   |
-| test_repeated_ints (Buffer)               | 2.5           | 2.9 ( 1.23 GB/s)  | 3.2 ( 1.10 GB/s)   | 0.0     | 8.7 ( 0.40 GB/s)   | 3788658 (3.6 MB)   |
-| test_repeated_zigzag (Default)            | 2.7           | 3.2 ( 1.15 GB/s)  | 4.3 ( 0.85 GB/s)   | 0.3     | 10.5 ( 0.34 GB/s)  | 3894341 (3.7 MB)   |
-| test_repeated_zigzag (Arena)              | 2.3           | 3.1 ( 1.16 GB/s)  | 3.3 ( 1.09 GB/s)   | 0.0     | 8.8 ( 0.41 GB/s)   | 3894341 (3.7 MB)   |
-| test_repeated_zigzag (Buffer)             | 2.3           | 3.1 ( 1.17 GB/s)  | 3.4 ( 1.07 GB/s)   | 0.0     | 8.8 ( 0.41 GB/s)   | 3894341 (3.7 MB)   |
-| test_repeated_floats (Default)            | 1.3           | 0.1 (44.56 GB/s)  | 0.1 (41.16 GB/s)   | 0.0     | 1.5 ( 2.50 GB/s)   | 4000021 (3.8 MB)   |
-| test_repeated_floats (Arena)              | 1.7           | 0.1 (35.42 GB/s)  | 0.1 (26.71 GB/s)   | 0.0     | 2.0 ( 1.83 GB/s)   | 4000021 (3.8 MB)   |
-| test_repeated_floats (Buffer)             | 2.4           | 0.1 (41.83 GB/s)  | 0.1 (35.86 GB/s)   | 0.0     | 2.6 ( 1.44 GB/s)   | 4000021 (3.8 MB)   |
-| test_repeated_strings (Default)           | 33.5          | 17.7 ( 1.94 GB/s) | 79.0 ( 0.43 GB/s)  | 42.5    | 174.0 ( 0.20 GB/s) | 36888913 (35.2 MB) |
-| test_repeated_strings (Arena)             | 26.2          | 12.7 ( 2.71 GB/s) | 36.7 ( 0.94 GB/s)  | 0.0     | 76.1 ( 0.45 GB/s)  | 36888913 (35.2 MB) |
-| test_repeated_strings (Buffer)            | 26.6          | 12.7 ( 2.71 GB/s) | 36.7 ( 0.94 GB/s)  | 0.0     | 76.2 ( 0.45 GB/s)  | 36888913 (35.2 MB) |
-| test_repeated_maps_ints (Default)         | 124.7         | 77.8 ( 0.12 GB/s) | 42.6 ( 0.22 GB/s)  | 177.0   | 430.7 ( 0.02 GB/s) | 9966980 (9.5 MB)   |
-| test_repeated_maps_ints (Arena)           | 55.3          | 49.3 ( 0.19 GB/s) | 29.7 ( 0.31 GB/s)  | 0.0     | 135.0 ( 0.07 GB/s) | 9966980 (9.5 MB)   |
-| test_repeated_maps_ints (Buffer)          | 55.6          | 49.4 ( 0.19 GB/s) | 30.1 ( 0.31 GB/s)  | 0.0     | 135.9 ( 0.07 GB/s) | 9966980 (9.5 MB)   |
-| test_repeated_maps_with_strings (Default) | 27.2          | 43.8 ( 1.12 GB/s) | 25.3 ( 1.93 GB/s)  | 45.8    | 143.0 ( 0.34 GB/s) | 52480857 (50.0 MB) |
-| test_repeated_maps_with_strings (Arena)   | 20.5          | 35.7 ( 1.37 GB/s) | 17.0 ( 2.88 GB/s)  | 0.2     | 74.2 ( 0.66 GB/s)  | 52480857 (50.0 MB) |
-| test_repeated_maps_with_strings (Buffer)  | 20.7          | 32.1 ( 1.52 GB/s) | 17.0 ( 2.87 GB/s)  | 0.0     | 69.9 ( 0.70 GB/s)  | 52480857 (50.0 MB) |
-| test_submessages (Default)                | 33.9          | 29.8 ( 1.09 GB/s) | 115.2 ( 0.28 GB/s) | 52.7    | 232.8 ( 0.14 GB/s) | 35000026 (33.4 MB) |
-| test_submessages (Arena)                  | 14.8          | 28.5 ( 1.15 GB/s) | 49.2 ( 0.66 GB/s)  | 0.2     | 93.3 ( 0.35 GB/s)  | 35000026 (33.4 MB) |
-| test_submessages (Buffer)                 | 14.6          | 25.4 ( 1.28 GB/s) | 48.9 ( 0.67 GB/s)  | 0.0     | 89.5 ( 0.36 GB/s)  | 35000026 (33.4 MB) |
+| test_memcopy (Default)                    | 0.3           | 0.8 ( 4.78 GB/s)  | 0.1 (37.96 GB/s)   | 0.4     | 3.4 ( 1.15 GB/s)   | 4194325 (4.0 MB)   |
+| test_memcopy (Arena)                      | 0.2           | 0.8 ( 4.84 GB/s)  | 0.1 (38.97 GB/s)   | 0.2     | 2.5 ( 1.57 GB/s)   | 4194325 (4.0 MB)   |
+| test_memcopy (Buffer)                     | 0.2           | 0.2 (18.73 GB/s)  | 0.1 (34.34 GB/s)   | 0.0     | 1.0 ( 3.74 GB/s)   | 4194325 (4.0 MB)   |
+| test_repeated_ints (Default)              | 3.8           | 2.8 ( 1.24 GB/s)  | 4.1 ( 0.86 GB/s)   | 0.5     | 11.2 ( 0.31 GB/s)  | 3788658 (3.6 MB)   |
+| test_repeated_ints (Arena)                | 2.6           | 3.2 ( 1.11 GB/s)  | 3.1 ( 1.14 GB/s)   | 0.0     | 8.9 ( 0.40 GB/s)   | 3788658 (3.6 MB)   |
+| test_repeated_ints (Buffer)               | 2.6           | 3.2 ( 1.10 GB/s)  | 3.0 ( 1.16 GB/s)   | 0.0     | 8.9 ( 0.40 GB/s)   | 3788658 (3.6 MB)   |
+| test_repeated_zigzag (Default)            | 3.8           | 3.1 ( 1.16 GB/s)  | 5.1 ( 0.71 GB/s)   | 0.5     | 12.6 ( 0.29 GB/s)  | 3894341 (3.7 MB)   |
+| test_repeated_zigzag (Arena)              | 2.7           | 3.2 ( 1.12 GB/s)  | 4.1 ( 0.89 GB/s)   | 0.0     | 10.0 ( 0.36 GB/s)  | 3894341 (3.7 MB)   |
+| test_repeated_zigzag (Buffer)             | 2.5           | 3.4 ( 1.06 GB/s)  | 4.2 ( 0.87 GB/s)   | 0.0     | 10.1 ( 0.36 GB/s)  | 3894341 (3.7 MB)   |
+| test_repeated_floats (Default)            | 2.3           | 0.1 (40.99 GB/s)  | 0.2 (22.49 GB/s)   | 0.0     | 2.6 ( 1.43 GB/s)   | 4000021 (3.8 MB)   |
+| test_repeated_floats (Arena)              | 2.0           | 0.2 (23.26 GB/s)  | 0.2 (16.92 GB/s)   | 0.0     | 2.4 ( 1.55 GB/s)   | 4000021 (3.8 MB)   |
+| test_repeated_floats (Buffer)             | 2.0           | 0.2 (21.63 GB/s)  | 0.2 (17.19 GB/s)   | 0.0     | 2.4 ( 1.53 GB/s)   | 4000021 (3.8 MB)   |
+| test_repeated_strings (Default)           | 39.1          | 18.4 ( 1.86 GB/s) | 81.9 ( 0.42 GB/s)  | 46.0    | 185.5 ( 0.19 GB/s) | 36888913 (35.2 MB) |
+| test_repeated_strings (Arena)             | 29.8          | 13.1 ( 2.62 GB/s) | 39.4 ( 0.87 GB/s)  | 0.0     | 82.4 ( 0.42 GB/s)  | 36888913 (35.2 MB) |
+| test_repeated_strings (Buffer)            | 29.9          | 13.2 ( 2.59 GB/s) | 38.0 ( 0.90 GB/s)  | 0.0     | 81.1 ( 0.42 GB/s)  | 36888913 (35.2 MB) |
+| test_repeated_maps_ints (Default)         | 137.5         | 81.0 ( 0.11 GB/s) | 43.6 ( 0.21 GB/s)  | 180.2   | 442.2 ( 0.02 GB/s) | 9966980 (9.5 MB)   |
+| test_repeated_maps_ints (Arena)           | 57.6          | 52.5 ( 0.18 GB/s) | 30.4 ( 0.31 GB/s)  | 0.0     | 140.5 ( 0.07 GB/s) | 9966980 (9.5 MB)   |
+| test_repeated_maps_ints (Buffer)          | 60.3          | 55.2 ( 0.17 GB/s) | 30.7 ( 0.30 GB/s)  | 0.0     | 146.3 ( 0.06 GB/s) | 9966980 (9.5 MB)   |
+| test_repeated_maps_with_strings (Default) | 28.5          | 44.1 ( 1.11 GB/s) | 26.2 ( 1.86 GB/s)  | 46.4    | 145.2 ( 0.34 GB/s) | 52480857 (50.0 MB) |
+| test_repeated_maps_with_strings (Arena)   | 22.1          | 36.3 ( 1.35 GB/s) | 17.4 ( 2.80 GB/s)  | 0.3     | 76.1 ( 0.64 GB/s)  | 52480857 (50.0 MB) |
+| test_repeated_maps_with_strings (Buffer)  | 22.0          | 33.2 ( 1.47 GB/s) | 17.3 ( 2.82 GB/s)  | 0.0     | 72.5 ( 0.67 GB/s)  | 52480857 (50.0 MB) |
+| test_submessages (Default)                | 35.5          | 29.9 ( 1.09 GB/s) | 117.1 ( 0.28 GB/s) | 55.4    | 237.8 ( 0.14 GB/s) | 35000026 (33.4 MB) |
+| test_submessages (Arena)                  | 15.0          | 29.0 ( 1.12 GB/s) | 50.4 ( 0.65 GB/s)  | 0.3     | 94.7 ( 0.34 GB/s)  | 35000026 (33.4 MB) |
+| test_submessages (Buffer)                 | 14.3          | 26.0 ( 1.25 GB/s) | 49.9 ( 0.65 GB/s)  | 0.0     | 90.2 ( 0.36 GB/s)  | 35000026 (33.4 MB) |

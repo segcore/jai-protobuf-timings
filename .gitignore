@@ -2,3 +2,4 @@
 jai/main
 *.exe
 cpp/build*
+analyse_results

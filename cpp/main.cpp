@@ -1,9 +1,11 @@
 #include "google/protobuf/arena.h"
 #include "sample.pb.h"
+#include "test_results.pb.h"
 
 #include <cassert>
 #include <chrono>
 #include <cstdio>
+#include <fstream>
 #include <string>
 #include <string_view>
 
@@ -19,22 +21,7 @@ constexpr int MB = 1024 * 1024;
 constexpr int GB = 1024 * 1024 * 1024;
 constexpr int MEMCOPY_SIZE = 4*MB;
 
-struct Timings {
-    std::string procedure_name_;
-    double create_object;
-    double serialize;
-    double deserialize;
-    double cleanup;
-    double total;
-    size_t byte_count;
-};
-
-enum class TestType {
-    Default,
-    Arena,
-    Buffer,
-    _count,
-};
+constexpr const char* OUTPUT_PATH = "results.pb";
 
 struct TestParams {
     TestType test_type;
@@ -45,45 +32,57 @@ struct TestParams {
 
 #define procedure_name(x) #x
 
-using TestFunction = Timings (*)(TestParams& params);
-static void time(std::vector<Timings>& results, const char* name, TestFunction fn);
-static Timings test_repeated_ints(TestParams& params);
-static Timings test_repeated_zigzag(TestParams& params);
-static Timings test_repeated_floats(TestParams& params);
-static Timings test_repeated_strings(TestParams& params);
-static Timings test_repeated_maps_ints(TestParams& params);
-static Timings test_repeated_maps_with_strings(TestParams& params);
-static Timings test_submessages(TestParams& params);
-static Timings test_memcopy(TestParams& params);
+using TestFunction = Timing (*)(TestParams& params);
+static void time(TestResults& test_results, const char* name, TestFunction fn);
+static Timing test_repeated_ints(TestParams& params);
+static Timing test_repeated_zigzag(TestParams& params);
+static Timing test_repeated_floats(TestParams& params);
+static Timing test_repeated_strings(TestParams& params);
+static Timing test_repeated_maps_ints(TestParams& params);
+static Timing test_repeated_maps_with_strings(TestParams& params);
+static Timing test_submessages(TestParams& params);
+static Timing test_memcopy(TestParams& params);
 static std::string string_with_length(int length);
 
 int main() {
-    std::vector<Timings> results;
+    TestResults test_results;
+    test_results.set_source("C++");
 
-    time(results, procedure_name(test_memcopy), test_memcopy);
-    time(results, procedure_name(test_repeated_ints), test_repeated_ints);
-    time(results, procedure_name(test_repeated_zigzag), test_repeated_zigzag);
-    time(results, procedure_name(test_repeated_floats), test_repeated_floats);
-    time(results, procedure_name(test_repeated_strings), test_repeated_strings);
-    time(results, procedure_name(test_repeated_maps_ints), test_repeated_maps_ints);
-    time(results, procedure_name(test_repeated_maps_with_strings), test_repeated_maps_with_strings);
-    time(results, procedure_name(test_submessages), test_submessages);
+    time(test_results, procedure_name(test_memcopy), test_memcopy);
+    time(test_results, procedure_name(test_repeated_ints), test_repeated_ints);
+    time(test_results, procedure_name(test_repeated_zigzag), test_repeated_zigzag);
+    time(test_results, procedure_name(test_repeated_floats), test_repeated_floats);
+    time(test_results, procedure_name(test_repeated_strings), test_repeated_strings);
+    time(test_results, procedure_name(test_repeated_maps_ints), test_repeated_maps_ints);
+    time(test_results, procedure_name(test_repeated_maps_with_strings), test_repeated_maps_with_strings);
+    time(test_results, procedure_name(test_submessages), test_submessages);
 
     printf("| Procedure | Create Object | Serialize | Deserialize | Cleanup | Total | Bytes |\n");
     printf("| --- | --- | --- | --- | --- | --- | --- |\n");
-    for (const auto& it : results) {
-        printf("| %-41s | %5.1f | %5.1f (%5.2f GB/s) | %5.1f (%5.2f GB/s) | %5.1f | %5.1f (%5.2f GB/s) | %llu (%.1f MB) |\n", it.procedure_name_.c_str(),
-                1000*it.create_object,
-                1000*it.serialize, it.byte_count/it.serialize/GB,
-                1000*it.deserialize, it.byte_count/it.deserialize/GB,
-                1000*it.cleanup,
-                1000*it.total, it.byte_count/it.total/GB,
-                (unsigned long long)it.byte_count, 1.0*it.byte_count/MB
+    for (const auto& it : test_results.results()) {
+        std::stringstream name;
+        name << it.name() << " (" << TestType_Name(it.test_type()) << ")";
+        const Timing& b = it.avg();
+        printf("| %-41s | %5.1f | %5.1f (%5.2f GB/s) | %5.1f (%5.2f GB/s) | %5.1f | %5.1f (%5.2f GB/s) | %llu (%.1f MB) |\n", name.str().c_str(),
+                1000*b.create_object(),
+                1000*b.serialize(), b.byte_count()/b.serialize()/GB,
+                1000*b.deserialize(), b.byte_count()/b.deserialize()/GB,
+                1000*b.cleanup(),
+                1000*b.total(), b.byte_count()/b.total()/GB,
+                (unsigned long long)b.byte_count(), 1.0*b.byte_count()/MB
         );
+    }
+
+    // Output to a machine-readable format for plotting
+    std::ofstream output_file(OUTPUT_PATH);
+    if (test_results.SerializeToOstream(&output_file)) {
+        std::cout << "Wrote " << OUTPUT_PATH << " (" << output_file.tellp() << " bytes)\n";
+    } else {
+        printf("Failed to write to output!\n");
     }
 }
 
-void time(std::vector<Timings>& results, const char* name, TestFunction fn) {
+void time(TestResults& results, const char* name, TestFunction fn) {
     std::string preallocated_buffer;
     preallocated_buffer.reserve(GB);
 
@@ -93,19 +92,21 @@ void time(std::vector<Timings>& results, const char* name, TestFunction fn) {
         }
     };
 
-    for (int test_type_int = 0; test_type_int < static_cast<int>(TestType::_count); test_type_int++) {
+    for (int test_type_int = 0; test_type_int < TestType_ARRAYSIZE; test_type_int++) {
         TestType test_type = static_cast<TestType>(test_type_int);
-        Timings best{};
+
+        TestResult* result = results.add_results();
+        result->set_name(name);
+        result->set_test_type(test_type);
+
         TestParams params{};
         params.test_type = test_type;
         params.arena = &arena;
 
-        std::string procedure_name_ = name;
         switch(test_type) {
-            case TestType::Default: procedure_name_ += " (Default)"; break;
-            case TestType::Arena:   procedure_name_ += " (Arena)"; break;
+            case TestType::Default: break;
+            case TestType::Arena: break;
             case TestType::Buffer:
-                procedure_name_ += " (Buffer)";
                 params.preallocated_buffer = &preallocated_buffer;
                 break;
             default: break;
@@ -113,27 +114,43 @@ void time(std::vector<Timings>& results, const char* name, TestFunction fn) {
 
         for (int repeat = 1; repeat <= REPEAT_COUNT; repeat++) {
             auto this_run = fn(params);
+            *result->add_runs() = this_run;
+
             if (repeat == 1) {
-                best = std::move(this_run);
+                *result->mutable_max() = this_run;
+                *result->mutable_min() = this_run;
+                *result->mutable_total() = this_run;
+                result->set_byte_count(this_run.byte_count());
             } else {
-                best.create_object = std::min(best.create_object, this_run.create_object);
-                best.serialize = std::min(best.serialize, this_run.serialize);
-                best.deserialize = std::min(best.deserialize, this_run.deserialize);
-                best.cleanup = std::min(best.cleanup, this_run.cleanup);
-                best.total = std::min(best.total, this_run.total);
+                auto save = [](Timing& destination, const Timing& this_run, double (*fn)(double a, double b)) {
+                    destination.set_create_object(fn(destination.create_object(), this_run.create_object()));
+                    destination.set_serialize(fn(destination.serialize(), this_run.serialize()));
+                    destination.set_deserialize(fn(destination.deserialize(), this_run.deserialize()));
+                    destination.set_cleanup(fn(destination.cleanup(), this_run.cleanup()));
+                    destination.set_total(fn(destination.total(), this_run.total()));
+                };
+                save(*result->mutable_total(), this_run, [](auto a, auto b) -> double { return a + b; });
+                save(*result->mutable_min(), this_run, [](auto a, auto b) -> double { return std::min(a, b); });
+                save(*result->mutable_max(), this_run, [](auto a, auto b) -> double { return std::max(a, b); });
             }
             arena.Reset();
         }
 
-        best.procedure_name_ = procedure_name_;
-        printf("=== %s ===\n", best.procedure_name_.c_str());
-        printf(" create object: %4.1fs\n", 1000*best.create_object);
-        printf(" serialize:     %4.1fs (%4.2f GB/s) %llu bytes (%.1f MB)\n", 1000*best.serialize, best.byte_count/best.serialize/GB, static_cast<unsigned long long>(best.byte_count), 1.0*best.byte_count/MB);
-        printf(" deserialize:   %4.1fs (%4.2f GB/s)\n", 1000*best.deserialize, best.byte_count/best.deserialize/GB);
-        printf(" cleanup:       %4.1fs\n", 1000*best.cleanup);
-        printf("total:          %4.1fs (%4.2f GB/s)\n\n", 1000*best.total, best.byte_count/best.total/GB);
+        *result->mutable_avg() = result->total();
+        result->mutable_avg()->set_create_object(result->avg().create_object() / REPEAT_COUNT);
+        result->mutable_avg()->set_serialize(result->avg().serialize() / REPEAT_COUNT);
+        result->mutable_avg()->set_deserialize(result->avg().deserialize() / REPEAT_COUNT);
+        result->mutable_avg()->set_cleanup(result->avg().cleanup() / REPEAT_COUNT);
+        result->mutable_avg()->set_total(result->avg().total() / REPEAT_COUNT);
 
-        results.emplace_back(std::move(best));
+        const auto& b = result->avg();
+
+        printf("=== %s (%s) ===\n", result->name().c_str(), TestType_Name(result->test_type()).c_str());
+        printf(" create object: %4.1fs\n", 1000*b.create_object());
+        printf(" serialize:     %4.1fs (%4.2f GB/s) %llu bytes (%.1f MB)\n", 1000*b.serialize(), b.byte_count()/b.serialize()/GB, static_cast<unsigned long long>(b.byte_count()), 1.0*b.byte_count()/MB);
+        printf(" deserialize:   %4.1fs (%4.2f GB/s)\n", 1000*b.deserialize(), b.byte_count()/b.deserialize()/GB);
+        printf(" cleanup:       %4.1fs\n", 1000*b.cleanup());
+        printf("total:          %4.1fs (%4.2f GB/s)\n\n", 1000*b.total(), b.byte_count()/b.total()/GB);
     }
 }
 
@@ -174,12 +191,12 @@ static std::string* WrapSerialize(T& message, TestParams& params, std::string* f
     return nullptr;
 }
 
-Timings test_repeated_ints(TestParams& params) {
-    Timings timings{};
-    timings.total -= get_time();
+Timing test_repeated_ints(TestParams& params) {
+    Timing timings{};
+    timings.set_total(-get_time());
 
     {
-        timings.create_object -= get_time();
+        timings.set_create_object(-get_time());
         Integers _message;
         Integers _decoded;
         Integers& message = *WrapCreateMessage(params, &_message);
@@ -188,31 +205,31 @@ Timings test_repeated_ints(TestParams& params) {
         for (int i = 1; i <= FIELD_COUNT; i++) {
             message.add_ints(i * 10);
         }
-        timings.create_object += get_time();
+        timings.set_create_object(timings.create_object() + get_time());
 
-        timings.serialize -= get_time();
+        timings.set_serialize(-get_time());
         std::string _bytes;
         std::string& bytes = *WrapSerialize(message, params, &_bytes);
-        timings.byte_count = bytes.size();
-        timings.serialize += get_time();
+        timings.set_byte_count(bytes.size());
+        timings.set_serialize(timings.serialize() + get_time());
 
-        timings.deserialize -= get_time();
+        timings.set_deserialize(-get_time());
         if (!decoded.ParseFromString(bytes)) printf("ERROR: Failed to deserialize\n");
-        timings.deserialize += get_time();
+        timings.set_deserialize(timings.deserialize() + get_time());
 
-        timings.cleanup -= get_time();
+        timings.set_cleanup(-get_time());
     }
-    timings.cleanup += get_time();
-    timings.total += get_time();
+    timings.set_cleanup(timings.cleanup() + get_time());
+    timings.set_total(timings.total() + get_time());
     return timings;
 }
 
-Timings test_repeated_zigzag(TestParams& params) {
-    Timings timings{};
-    timings.total -= get_time();
+Timing test_repeated_zigzag(TestParams& params) {
+    Timing timings{};
+    timings.set_total(-get_time());
 
     {
-        timings.create_object -= get_time();
+        timings.set_create_object(-get_time());
         Integers _message;
         Integers _decoded;
         Integers& message = *WrapCreateMessage(params, &_message);
@@ -221,31 +238,31 @@ Timings test_repeated_zigzag(TestParams& params) {
         for (int i = 1; i <= FIELD_COUNT; i++) {
             message.add_zigzagged(i * 10);
         }
-        timings.create_object += get_time();
+        timings.set_create_object(timings.create_object() + get_time());
 
-        timings.serialize -= get_time();
+        timings.set_serialize(-get_time());
         std::string _bytes;
         std::string& bytes = *WrapSerialize(message, params, &_bytes);
-        timings.byte_count = bytes.size();
-        timings.serialize += get_time();
+        timings.set_byte_count(bytes.size());
+        timings.set_serialize(timings.serialize() + get_time());
 
-        timings.deserialize -= get_time();
+        timings.set_deserialize(-get_time());
         if (!decoded.ParseFromString(bytes)) printf("ERROR: Failed to deserialize\n");
-        timings.deserialize += get_time();
+        timings.set_deserialize(timings.deserialize() + get_time());
 
-        timings.cleanup -= get_time();
+        timings.set_cleanup(-get_time());
     }
-    timings.cleanup += get_time();
-    timings.total += get_time();
+    timings.set_cleanup(timings.cleanup() + get_time());
+    timings.set_total(timings.total() + get_time());
     return timings;
 }
 
-Timings test_repeated_floats(TestParams& params) {
-    Timings timings{};
-    timings.total -= get_time();
+Timing test_repeated_floats(TestParams& params) {
+    Timing timings{};
+    timings.set_total(-get_time());
 
     {
-        timings.create_object -= get_time();
+        timings.set_create_object(-get_time());
         Floats _message;
         Floats _decoded;
         Floats& message = *WrapCreateMessage(params, &_message);
@@ -254,31 +271,31 @@ Timings test_repeated_floats(TestParams& params) {
         for (int i = 1; i <= FIELD_COUNT; i++) {
             message.add_floats(i * 10);
         }
-        timings.create_object += get_time();
+        timings.set_create_object(timings.create_object() + get_time());
 
-        timings.serialize -= get_time();
+        timings.set_serialize(-get_time());
         std::string _bytes;
         std::string& bytes = *WrapSerialize(message, params, &_bytes);
-        timings.byte_count = bytes.size();
-        timings.serialize += get_time();
+        timings.set_byte_count(bytes.size());
+        timings.set_serialize(timings.serialize() + get_time());
 
-        timings.deserialize -= get_time();
+        timings.set_deserialize(-get_time());
         if (!decoded.ParseFromString(bytes)) printf("ERROR: Failed to deserialize\n");
-        timings.deserialize += get_time();
+        timings.set_deserialize(timings.deserialize() + get_time());
 
-        timings.cleanup -= get_time();
+        timings.set_cleanup(-get_time());
     }
-    timings.cleanup += get_time();
-    timings.total += get_time();
+    timings.set_cleanup(timings.cleanup() + get_time());
+    timings.set_total(timings.total() + get_time());
     return timings;
 }
 
-Timings test_repeated_strings(TestParams& params) {
-    Timings timings{};
-    timings.total -= get_time();
+Timing test_repeated_strings(TestParams& params) {
+    Timing timings{};
+    timings.set_total(-get_time());
 
     {
-        timings.create_object -= get_time();
+        timings.set_create_object(-get_time());
         Strings _message;
         Strings _decoded;
         Strings& message = *WrapCreateMessage(params, &_message);
@@ -288,31 +305,31 @@ Timings test_repeated_strings(TestParams& params) {
             std::string* str = message.add_strings();
             *str = "String with some characters: " + std::to_string(i);
         }
-        timings.create_object += get_time();
+        timings.set_create_object(timings.create_object() + get_time());
 
-        timings.serialize -= get_time();
+        timings.set_serialize(-get_time());
         std::string _bytes;
         std::string& bytes = *WrapSerialize(message, params, &_bytes);
-        timings.byte_count = bytes.size();
-        timings.serialize += get_time();
+        timings.set_byte_count(bytes.size());
+        timings.set_serialize(timings.serialize() + get_time());
 
-        timings.deserialize -= get_time();
+        timings.set_deserialize(-get_time());
         if (!decoded.ParseFromString(bytes)) printf("ERROR: Failed to deserialize\n");
-        timings.deserialize += get_time();
+        timings.set_deserialize(timings.deserialize() + get_time());
 
-        timings.cleanup -= get_time();
+        timings.set_cleanup(-get_time());
     }
-    timings.cleanup += get_time();
-    timings.total += get_time();
+    timings.set_cleanup(timings.cleanup() + get_time());
+    timings.set_total(timings.total() + get_time());
     return timings;
 }
 
-Timings test_repeated_maps_ints(TestParams& params) {
-    Timings timings{};
-    timings.total -= get_time();
+Timing test_repeated_maps_ints(TestParams& params) {
+    Timing timings{};
+    timings.set_total(-get_time());
 
     {
-        timings.create_object -= get_time();
+        timings.set_create_object(-get_time());
         Maps _message;
         Maps _decoded;
         Maps& message = *WrapCreateMessage(params, &_message);
@@ -320,31 +337,31 @@ Timings test_repeated_maps_ints(TestParams& params) {
         for (int i = 1; i <= FIELD_COUNT; i++) {
             (*message.mutable_map_int_to_int())[i] = i;
         }
-        timings.create_object += get_time();
+        timings.set_create_object(timings.create_object() + get_time());
 
-        timings.serialize -= get_time();
+        timings.set_serialize(-get_time());
         std::string _bytes;
         std::string& bytes = *WrapSerialize(message, params, &_bytes);
-        timings.byte_count = bytes.size();
-        timings.serialize += get_time();
+        timings.set_byte_count(bytes.size());
+        timings.set_serialize(timings.serialize() + get_time());
 
-        timings.deserialize -= get_time();
+        timings.set_deserialize(-get_time());
         if (!decoded.ParseFromString(bytes)) printf("ERROR: Failed to deserialize\n");
-        timings.deserialize += get_time();
+        timings.set_deserialize(timings.deserialize() + get_time());
 
-        timings.cleanup -= get_time();
+        timings.set_cleanup(-get_time());
     }
-    timings.cleanup += get_time();
-    timings.total += get_time();
+    timings.set_cleanup(timings.cleanup() + get_time());
+    timings.set_total(timings.total() + get_time());
     return timings;
 }
 
-Timings test_repeated_maps_with_strings(TestParams& params) {
-    Timings timings{};
-    timings.total -= get_time();
+Timing test_repeated_maps_with_strings(TestParams& params) {
+    Timing timings{};
+    timings.set_total(-get_time());
 
     {
-        timings.create_object -= get_time();
+        timings.set_create_object(-get_time());
         Maps _message;
         Maps _decoded;
         Maps& message = *WrapCreateMessage(params, &_message);
@@ -353,31 +370,31 @@ Timings test_repeated_maps_with_strings(TestParams& params) {
             (*message.mutable_map_int_to_string())[i] = string_with_length(i % 1000);
             (*message.mutable_map_string_to_int())["str" + std::to_string(i)] = i;
         }
-        timings.create_object += get_time();
+        timings.set_create_object(timings.create_object() + get_time());
 
-        timings.serialize -= get_time();
+        timings.set_serialize(-get_time());
         std::string _bytes;
         std::string& bytes = *WrapSerialize(message, params, &_bytes);
-        timings.byte_count = bytes.size();
-        timings.serialize += get_time();
+        timings.set_byte_count(bytes.size());
+        timings.set_serialize(timings.serialize() + get_time());
 
-        timings.deserialize -= get_time();
+        timings.set_deserialize(-get_time());
         if (!decoded.ParseFromString(bytes)) printf("ERROR: Failed to deserialize\n");
-        timings.deserialize += get_time();
+        timings.set_deserialize(timings.deserialize() + get_time());
 
-        timings.cleanup -= get_time();
+        timings.set_cleanup(-get_time());
     }
-    timings.cleanup += get_time();
-    timings.total += get_time();
+    timings.set_cleanup(timings.cleanup() + get_time());
+    timings.set_total(timings.total() + get_time());
     return timings;
 }
 
-Timings test_submessages(TestParams& params) {
-    Timings timings{};
-    timings.total -= get_time();
+Timing test_submessages(TestParams& params) {
+    Timing timings{};
+    timings.set_total(-get_time());
 
     {
-        timings.create_object -= get_time();
+        timings.set_create_object(-get_time());
         Messages _message;
         Messages _decoded;
         Messages& message = *WrapCreateMessage(params, &_message);
@@ -408,35 +425,35 @@ Timings test_submessages(TestParams& params) {
             submessage->set_the_enum(Submessage::ENUM_A);
             submessage->set_the_bool(true);
         }
-        timings.create_object += get_time();
+        timings.set_create_object(timings.create_object() + get_time());
 
-        timings.serialize -= get_time();
+        timings.set_serialize(-get_time());
         std::string _bytes;
         std::string& bytes = *WrapSerialize(message, params, &_bytes);
-        timings.byte_count = bytes.size();
-        timings.serialize += get_time();
+        timings.set_byte_count(bytes.size());
+        timings.set_serialize(timings.serialize() + get_time());
 
-        timings.deserialize -= get_time();
+        timings.set_deserialize(-get_time());
         if (!decoded.ParseFromString(bytes)) printf("ERROR: Failed to deserialize\n");
-        timings.deserialize += get_time();
+        timings.set_deserialize(timings.deserialize() + get_time());
 
-        timings.cleanup -= get_time();
+        timings.set_cleanup(-get_time());
     }
-    timings.cleanup += get_time();
-    timings.total += get_time();
+    timings.set_cleanup(timings.cleanup() + get_time());
+    timings.set_total(timings.total() + get_time());
     return timings;
 }
 
 
-Timings test_memcopy(TestParams& params) {
-    Timings timings{};
-    timings.total -= get_time();
+Timing test_memcopy(TestParams& params) {
+    Timing timings{};
+    timings.set_total(-get_time());
 
     // It would be nice to just do memcpy().
     // All this is to try and avoid the optimiser just removing everything.
     // There is most certainly a better way.
     {
-        timings.create_object -= get_time();
+        timings.set_create_object(-get_time());
         Floats _message;
         Floats _decoded;
         Floats& message = *WrapCreateMessage(params, &_message);
@@ -447,39 +464,39 @@ Timings test_memcopy(TestParams& params) {
             std::memset(&value, 1, sizeof(value));
             message.mutable_floats()->resize(MEMCOPY_SIZE/sizeof(float), value);
         }
-        timings.create_object += get_time();
+        timings.set_create_object(timings.create_object() + get_time());
 
         std::string _bytes;
         std::string& bytes = *WrapSerialize(message, params, &_bytes);
-        timings.byte_count = bytes.size();
+        timings.set_byte_count(bytes.size());
 
-        if (timings.byte_count < MEMCOPY_SIZE) {
-            printf("ERROR: Encoding too small. Test invalid. Got %d but expect ~%d\n", (int)timings.byte_count, MEMCOPY_SIZE);
+        if (timings.byte_count() < MEMCOPY_SIZE) {
+            printf("ERROR: Encoding too small. Test invalid. Got %d but expect ~%d\n", (int)timings.byte_count(), MEMCOPY_SIZE);
         }
 
         std::string destination;
         destination.reserve(bytes.size());
         std::string_view dest_view{destination.data(), bytes.size()};
-        timings.serialize -= get_time();
+        timings.set_serialize(-get_time());
         // --- The actual test is here ---
         std::memcpy(destination.data(), bytes.data(), bytes.size());
-        timings.serialize += get_time();
+        timings.set_serialize(timings.serialize() + get_time());
 
         bytes[0] = 10; // don't re-use this buffer secretly
         (void)decoded.ParseFromArray(dest_view.data(), dest_view.size());
         (void)decoded.SerializeToString(&bytes);
 
-        timings.deserialize -= get_time();
+        timings.set_deserialize(-get_time());
         int different = std::memcmp(bytes.data(), destination.data(), bytes.size());
-        timings.deserialize += get_time();
+        timings.set_deserialize(timings.deserialize() + get_time());
         if (different) {
             printf("ERROR: Serializations are different!\n");
         }
 
-        timings.cleanup -= get_time();
+        timings.set_cleanup(-get_time());
     }
-    timings.cleanup += get_time();
-    timings.total += get_time();
+    timings.set_cleanup(timings.cleanup() + get_time());
+    timings.set_total(timings.total() + get_time());
     return timings;
 }
 

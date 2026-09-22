@@ -12,7 +12,7 @@ protobuf_generate(
     TARGET proto_cpp
     LANGUAGE cpp
     PROTOC_OUT_DIR generated
-    PROTOS ../proto/sample.proto
+    PROTOS ../proto/sample.proto ../proto/test_results.proto
     IMPORT_DIRS ../proto
 )
 target_link_libraries(proto_cpp PUBLIC libprotobuf)

@@ -2,8 +2,9 @@
 #import "Basic"()(ENABLE_ASSERT=true);
 #import "String";
 #import "Flat_Pool";
+#import "File";
 
-#insert #run generate_jai("../proto/sample.proto");
+#insert #run generate_jai("../proto/sample.proto", "../proto/test_results.proto");
 
 REPEAT_COUNT :: 15;
 FIELD_COUNT :: 1_000_000;
@@ -11,20 +12,13 @@ MB :: 1024*1024;
 GB :: 1024*1024*1024;
 MEMCOPY_SIZE :: 4*MB;
 
-Timings :: struct {
-    procedure_name: string;
-    create_object: float64;
-    serialize: float64;
-    deserialize: float64;
-    cleanup: float64;
-    total: float64;
-    byte_count: s64;
-}
-
-TestType :: enum {
-    Default;
-    Arena;
-    Buffer;
+Basic :: #import "Basic";
+#if Basic.ENABLE_ASSERT {
+    SOURCE_NAME :: "Jai";
+    OUTPUT_PATH :: "results.pb";
+} else {
+    SOURCE_NAME :: "Jai (no asserts)";
+    OUTPUT_PATH :: "results-no-assert.pb";
 }
 
 TestParams :: struct {
@@ -32,8 +26,7 @@ TestParams :: struct {
     preallocated_buffer: []u8;
 }
 
-TestFunction :: #type (preallocated_buffer: TestParams) -> Timings;
-
+TestFunction :: #type (preallocated_buffer: TestParams) -> Timing;
 
 get_time :: () -> float64 {
     time := current_time_monotonic();
@@ -46,35 +39,43 @@ main :: () {
     context.print_style.default_format_float.trailing_width = 1;
     context.print_style.default_format_float.zero_removal = .NO;
 
-    results: [..]Timings;
-    results.allocator = context.default_allocator;
+    test_results: TestResults;
+    test_results.source = SOURCE_NAME;
+    test_results.results.allocator = context.default_allocator;
 
     init(*pool, 4*GB);
 
-    time(*results, test_memcopy);
-    time(*results, test_repeated_ints);
-    time(*results, test_repeated_zigzag);
-    time(*results, test_repeated_floats);
-    time(*results, test_repeated_strings);
-    time(*results, test_repeated_maps_ints);
-    time(*results, test_repeated_maps_with_strings);
-    time(*results, test_submessages);
+    time(*test_results, test_memcopy);
+    time(*test_results, test_repeated_ints);
+    time(*test_results, test_repeated_zigzag);
+    time(*test_results, test_repeated_floats);
+    time(*test_results, test_repeated_strings);
+    time(*test_results, test_repeated_maps_ints);
+    time(*test_results, test_repeated_maps_with_strings);
+    time(*test_results, test_submessages);
 
     print("| Procedure | Create Object | Serialize | Deserialize | Cleanup | Total | Bytes |\n");
     print("| --- | --- | --- | --- | --- | --- | --- |\n");
-    for results {
-        print("| %0%0 | % | % (% GB/s) | % (% GB/s) | % | % (% GB/s) | % (% MB) |\n", it.procedure_name, pad(it.procedure_name, 41),
-                1000*it.create_object,
-                1000*it.serialize, format_gbps(it.byte_count/it.serialize/GB),
-                1000*it.deserialize, format_gbps(it.byte_count/it.deserialize/GB),
-                1000*it.cleanup,
-                1000*it.total, format_gbps(it.byte_count/it.total/GB),
-                it.byte_count, formatFloat(1.0*it.byte_count/MB, trailing_width=1, zero_removal=.NO)
+    for test_results.results {
+        name := tprint("% (%)", it.name, it.test_type);
+        b := it.Avg;
+        print("| %0%0 | % | % (% GB/s) | % (% GB/s) | % | % (% GB/s) | % (% MB) |\n", name, pad(name, 41),
+                1000*b.create_object,
+                1000*b.serialize, format_gbps(b.byte_count/b.serialize/GB),
+                1000*b.deserialize, format_gbps(b.byte_count/b.deserialize/GB),
+                1000*b.cleanup,
+                1000*b.total, format_gbps(b.byte_count/b.total/GB),
+                b.byte_count, formatFloat(1.0*b.byte_count/MB, trailing_width=1, zero_removal=.NO)
         );
     }
+
+    // Output to a machine-readable format for plotting
+    result_bytes := Serialize(test_results);
+    write_entire_file(OUTPUT_PATH, result_bytes.(string));
+    print("Wrote % (% bytes)\n", OUTPUT_PATH, result_bytes.count);
 }
 
-time :: (results: *[..]Timings, $function: Code) {
+time :: (results: *TestResults, $function: Code) {
     procedure_name :: #procedure_name(#insert function);
     fn : TestFunction : #insert function;
 
@@ -83,13 +84,14 @@ time :: (results: *[..]Timings, $function: Code) {
 
     for test_type_int : enum_values_as_s64(TestType) {
         test_type := cast(TestType, test_type_int);
-        name := procedure_name;
-        name = sprint("% (%)", procedure_name, test_type,, context.default_allocator);
+
+        result : *TestResult = array_add(*results.results);
+        result.name = procedure_name;
+        result.test_type = test_type;
 
         params: TestParams;
         params.test_type = test_type;
 
-        test_parameters: []u8;
         if test_type == {
             case .Default; context.allocator = context.default_allocator;
             case .Arena; context.allocator = .{flat_pool_allocator_proc, *pool};
@@ -100,34 +102,47 @@ time :: (results: *[..]Timings, $function: Code) {
                 params.preallocated_buffer = preallocated_buffer;
         }
 
-        best: Timings;
         for 1..REPEAT_COUNT {
             this_run := fn(params);
+            array_add(*result.runs, this_run,, context.default_allocator);
             if it == 1 {
-                best = this_run;
+                result.Max = this_run;
+                result.Min = this_run;
+                result.Total = this_run;
+                result.byte_count = this_run.byte_count;
             } else {
-                best.create_object = min(best.create_object, this_run.create_object);
-                best.serialize = min(best.serialize, this_run.serialize);
-                best.deserialize = min(best.deserialize, this_run.deserialize);
-                best.cleanup = min(best.cleanup, this_run.cleanup);
-                best.total = min(best.total, this_run.total);
+                save :: (destination: *Timing, this_run: Timing, fn: (a: float64, b: float64) -> float64) {
+                    destination.create_object = fn(destination.create_object, this_run.create_object);
+                    destination.serialize = fn(destination.serialize, this_run.serialize);
+                    destination.deserialize = fn(destination.deserialize, this_run.deserialize);
+                    destination.cleanup = fn(destination.cleanup, this_run.cleanup);
+                    destination.total = fn(destination.total, this_run.total);
+                }
+                save(*result.Total, this_run, (a, b) => a + b);
+                save(*result.Min, this_run, min);
+                save(*result.Max, this_run, max);
             }
             reset(*pool);
         }
-        best.procedure_name = name;
-        print("=== % ===\n", name);
-        print(" create object: %ms\n", 1000*best.create_object);
-        print(" serialize:     %ms (% GB/s) % bytes (% MB)\n", 1000*best.serialize, format_gbps(best.byte_count/best.serialize/GB), best.byte_count, formatFloat(1.0*best.byte_count/MB, trailing_width=1));
-        print(" deserialize:   %ms (% GB/s)\n", 1000*best.deserialize, format_gbps(best.byte_count/best.deserialize/GB));
-        print(" cleanup:       %ms\n", 1000*best.cleanup);
-        print("total:          %ms (% GB/s)\n\n", 1000*best.total, format_gbps(best.byte_count/best.total/GB));
+        result.Avg = result.Total;
+        result.Avg.create_object /= REPEAT_COUNT;
+        result.Avg.serialize /= REPEAT_COUNT;
+        result.Avg.deserialize /= REPEAT_COUNT;
+        result.Avg.cleanup /= REPEAT_COUNT;
+        result.Avg.total /= REPEAT_COUNT;
 
-        array_add(results, best);
+        b := result.Avg;
+        print("=== % (%) ===\n", result.name, result.test_type);
+        print(" create object: %ms\n", 1000*b.create_object);
+        print(" serialize:     %ms (% GB/s) % bytes (% MB)\n", 1000*b.serialize, format_gbps(b.byte_count/b.serialize/GB), b.byte_count, formatFloat(1.0*b.byte_count/MB, trailing_width=1));
+        print(" deserialize:   %ms (% GB/s)\n", 1000*b.deserialize, format_gbps(b.byte_count/b.deserialize/GB));
+        print(" cleanup:       %ms\n", 1000*b.cleanup);
+        print("total:          %ms (% GB/s)\n\n", 1000*b.total, format_gbps(b.byte_count/b.total/GB));
     }
 }
 
-test_repeated_ints :: (params: TestParams) -> Timings {
-    timings: Timings;
+test_repeated_ints :: (params: TestParams) -> Timing {
+    timings: Timing;
     timings.total -= get_time();
 
     // message Integers {
@@ -171,8 +186,8 @@ test_repeated_ints :: (params: TestParams) -> Timings {
     return timings;
 }
 
-test_repeated_zigzag :: (params: TestParams) -> Timings {
-    timings: Timings;
+test_repeated_zigzag :: (params: TestParams) -> Timing {
+    timings: Timing;
     timings.total -= get_time();
 
     timings.create_object -= get_time();
@@ -210,8 +225,8 @@ test_repeated_zigzag :: (params: TestParams) -> Timings {
     return timings;
 }
 
-test_repeated_floats :: (params: TestParams) -> Timings {
-    timings: Timings;
+test_repeated_floats :: (params: TestParams) -> Timing {
+    timings: Timing;
     timings.total -= get_time();
 
     timings.create_object -= get_time();
@@ -249,8 +264,8 @@ test_repeated_floats :: (params: TestParams) -> Timings {
     return timings;
 }
 
-test_repeated_strings :: (params: TestParams) -> Timings {
-    timings: Timings;
+test_repeated_strings :: (params: TestParams) -> Timing {
+    timings: Timing;
     timings.total -= get_time();
 
     timings.create_object -= get_time();
@@ -290,8 +305,8 @@ test_repeated_strings :: (params: TestParams) -> Timings {
     return timings;
 }
 
-test_repeated_maps_ints :: (params: TestParams) -> Timings {
-    timings: Timings;
+test_repeated_maps_ints :: (params: TestParams) -> Timing {
+    timings: Timing;
     timings.total -= get_time();
 
     timings.create_object -= get_time();
@@ -331,8 +346,8 @@ test_repeated_maps_ints :: (params: TestParams) -> Timings {
     return timings;
 }
 
-test_repeated_maps_with_strings :: (params: TestParams) -> Timings {
-    timings: Timings;
+test_repeated_maps_with_strings :: (params: TestParams) -> Timing {
+    timings: Timing;
     timings.total -= get_time();
 
     timings.create_object -= get_time();
@@ -371,8 +386,8 @@ test_repeated_maps_with_strings :: (params: TestParams) -> Timings {
     return timings;
 }
 
-test_submessages :: (params: TestParams) -> Timings {
-    timings: Timings;
+test_submessages :: (params: TestParams) -> Timing {
+    timings: Timing;
     timings.total -= get_time();
 
     timings.create_object -= get_time();
@@ -432,8 +447,8 @@ test_submessages :: (params: TestParams) -> Timings {
     return timings;
 }
 
-test_memcopy :: (params: TestParams) -> Timings {
-    timings: Timings;
+test_memcopy :: (params: TestParams) -> Timing {
+    timings: Timing;
     timings.total -= get_time();
 
     // It would be nice to just do memcpy().

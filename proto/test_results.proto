@@ -1,0 +1,46 @@
+/*
+ * This protobuf format is used to store the test results.
+ *
+ * It is used by an analysis program to generate plots for the READMEs.
+ *
+ * Why use a CSV, JSON etc. if we already have a serialization format which is much better?
+ * I guess for external tools without large external dependencies... but this is internal :D
+ */
+syntax = "proto3";
+
+// Memory allocation method
+enum TestType {
+  Default = 0;
+  Arena = 1;
+  Buffer = 2;
+}
+
+// Time (single or aggregate) that a test takes to run
+message Timing {
+  // all in seconds
+  double create_object = 1;
+  double serialize = 2;
+  double deserialize = 3;
+  double cleanup = 4;
+  double total = 5;
+  int64 byte_count = 10;
+}
+
+// A single test result
+message TestResult {
+  string name = 1;
+  TestType test_type = 2;
+  int64 byte_count = 3;
+
+  repeated Timing runs = 4; // All of the runs
+  Timing Min = 5;
+  Timing Avg = 6;
+  Timing Max = 7;
+  Timing Total = 8;
+}
+
+// A group of test results
+message TestResults {
+  string source = 1;
+  repeated TestResult results = 2;
+}
