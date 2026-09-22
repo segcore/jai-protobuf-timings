@@ -5,13 +5,13 @@ Basic timing comparison between jai-protobuf and the official C++ Protobuf imple
 
 ## Plots
 
-To generate the plots, build each of the sub-projects as per their readme file
-(for release builds). Then run the release builds. This generates local test
-results file in protobuf binary format. The `analyse_results.jai` program loads these
-and generates mermaid plots which can be rendered in markdown (copy pasted below).
-
-All plots show the time taken (e.g. to serialize or deserialize) in
+These plots show the time taken (e.g. to serialize or deserialize) in
 milliseconds. Lower is better.
+
+To generate the plots, build each of the sub-projects as per their readme file
+(for release builds), then run the release binary. This generates local test
+results file in protobuf binary format. The `analyse_results.jai` program loads these
+and generates mermaid plots which can be rendered in markdown (copy-pasted below).
 
 ```mermaid
 gantt

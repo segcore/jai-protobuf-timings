@@ -8,6 +8,15 @@ MB :: 1024*1024;
 
 INPUT_PATHS :: string.["jai/results.pb", "jai/results-no-assert.pb", "cpp/results.pb"];
 
+RUN_AT_COMPILE_TIME :: true;
+#if RUN_AT_COMPILE_TIME {
+    #run {
+        #import "Compiler";
+        set_build_options_dc(.{ do_output=false });
+        main();
+    }
+}
+
 main :: () {
     print("------------------------------\n");
     all_sources: [..]TestResults;
@@ -41,7 +50,8 @@ main :: () {
             }
         }
     }
-
+    print("------------------------------\n");
+    write_string("\n");
     format2(all_sources, test_names);
 }
 
