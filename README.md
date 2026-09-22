@@ -1,7 +1,7 @@
 # Jai Protobuf Timings
 
-Basic timing comparison between jai-protobuf and the official C++ Protobuf implementation.
-
+Basic timing comparison between [jai-protobuf](https://github.com/segcore/jai-protobuf)
+and the [official C++ Protobuf](https://github.com/protocolbuffers/protobuf) implementation.
 
 ## Plots
 
