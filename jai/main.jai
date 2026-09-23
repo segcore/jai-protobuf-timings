@@ -79,7 +79,7 @@ time :: (results: *TestResults, $function: Code) {
     procedure_name :: #procedure_name(#insert function);
     fn : TestFunction : #insert function;
 
-    preallocated_buffer := NewArray(GB, u8, initialized=false);
+    preallocated_buffer := NewArray(GB, u8, initialized=false,, context.default_allocator);
     defer array_free(preallocated_buffer);
 
     for test_type_int : enum_values_as_s64(TestType) {
@@ -101,6 +101,7 @@ time :: (results: *TestResults, $function: Code) {
                 context.allocator = .{flat_pool_allocator_proc, *pool};
                 params.preallocated_buffer = preallocated_buffer;
         }
+        defer context.allocator = context.default_allocator;
 
         for 1..REPEAT_COUNT {
             this_run := fn(params);
@@ -162,8 +163,7 @@ test_repeated_ints :: (params: TestParams) -> Timing {
     timings.serialize -= get_time();
     bytes: []u8;
     if params.preallocated_buffer {
-        index := Serialize(params.preallocated_buffer, params.preallocated_buffer.count, message);
-        bytes = encode_finish(params.preallocated_buffer, index);
+        bytes = Serialize(message, params.preallocated_buffer);
     } else {
         bytes = Serialize(message);
     }
@@ -202,8 +202,7 @@ test_repeated_zigzag :: (params: TestParams) -> Timing {
     timings.serialize -= get_time();
     bytes: []u8;
     if params.preallocated_buffer {
-        index := Serialize(params.preallocated_buffer, params.preallocated_buffer.count, message);
-        bytes = encode_finish(params.preallocated_buffer, index);
+        bytes = Serialize(message, params.preallocated_buffer);
     } else {
         bytes = Serialize(message);
     }
@@ -241,8 +240,7 @@ test_repeated_floats :: (params: TestParams) -> Timing {
     timings.serialize -= get_time();
     bytes: []u8;
     if params.preallocated_buffer {
-        index := Serialize(params.preallocated_buffer, params.preallocated_buffer.count, message);
-        bytes = encode_finish(params.preallocated_buffer, index);
+        bytes = Serialize(message, params.preallocated_buffer);
     } else {
         bytes = Serialize(message);
     }
@@ -281,8 +279,7 @@ test_repeated_strings :: (params: TestParams) -> Timing {
     timings.serialize -= get_time();
     bytes: []u8;
     if params.preallocated_buffer {
-        index := Serialize(params.preallocated_buffer, params.preallocated_buffer.count, message);
-        bytes = encode_finish(params.preallocated_buffer, index);
+        bytes = Serialize(message, params.preallocated_buffer);
     } else {
         bytes = Serialize(message);
     }
@@ -322,8 +319,7 @@ test_repeated_maps_ints :: (params: TestParams) -> Timing {
     timings.serialize -= get_time();
     bytes: []u8;
     if params.preallocated_buffer {
-        index := Serialize(params.preallocated_buffer, params.preallocated_buffer.count, message);
-        bytes = encode_finish(params.preallocated_buffer, index);
+        bytes = Serialize(message, params.preallocated_buffer);
     } else {
         bytes = Serialize(message);
     }
@@ -362,8 +358,7 @@ test_repeated_maps_with_strings :: (params: TestParams) -> Timing {
     timings.serialize -= get_time();
     bytes: []u8;
     if params.preallocated_buffer {
-        index := Serialize(params.preallocated_buffer, params.preallocated_buffer.count, message);
-        bytes = encode_finish(params.preallocated_buffer, index);
+        bytes = Serialize(message, params.preallocated_buffer);
     } else {
         bytes = Serialize(message);
     }
@@ -424,8 +419,7 @@ test_submessages :: (params: TestParams) -> Timing {
     timings.serialize -= get_time();
     bytes: []u8;
     if params.preallocated_buffer {
-        index := Serialize(params.preallocated_buffer, params.preallocated_buffer.count, message);
-        bytes = encode_finish(params.preallocated_buffer, index);
+        bytes = Serialize(message, params.preallocated_buffer);
     } else {
         bytes = Serialize(message);
     }
@@ -465,8 +459,7 @@ test_memcopy :: (params: TestParams) -> Timing {
 
     bytes: []u8;
     if params.preallocated_buffer {
-        index := Serialize(params.preallocated_buffer, params.preallocated_buffer.count, message);
-        bytes = encode_finish(params.preallocated_buffer, index);
+        bytes = Serialize(message, params.preallocated_buffer);
     } else {
         bytes = Serialize(message);
     }
@@ -484,7 +477,7 @@ test_memcopy :: (params: TestParams) -> Timing {
 
     bytes[0] = 10; // don't re-use this buffer secretly
     Deserialize(*decoded, destination);
-    Serialize(bytes, bytes.count, decoded); // serialize into bytes
+    Serialize(decoded, bytes); // serialize into bytes
 
     timings.deserialize -= get_time();
     different := memcmp(bytes.data, destination.data, bytes.count);
