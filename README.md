@@ -3,15 +3,57 @@
 Basic timing comparison between [jai-protobuf](https://github.com/segcore/jai-protobuf)
 and the [official C++ Protobuf](https://github.com/protocolbuffers/protobuf) implementation.
 
+## Comments
+
+This section has my opinion on things, ignore it if you wish.
+
+* Arenas in Jai are really easy to setup. There are no changes to the calling
+  code, you just set up the allocator as the arena (Flat_Pool) on the outside
+  (could be many layers "higher up") in a few lines of code, then call
+  reset(*pool) when appropriate. This is really convenient and makes it much
+  easier to adopt using arenas in Jai code.
+  * Arenas in C++ are less-so. You have to use a different API to create the message (no
+    simple declaration as you might on the stack) and pass the arena around
+    through the depth of function calls. The testing code is a lot uglier because now it
+    needs both a local and a pointer version.
+  * C++ strings are still [allocated on the heap](https://protobuf.dev/reference/cpp/arenas/#fn:1)
+    when using arenas.
+* Re-using buffers for allocation
+  * In Jai, this produces significant improvement in serialization - 2x speed for complex structures
+    as in the submessages test. In all test cases it becomes faster than the C++ serialization.
+    * It is also very convenient. Instead of `Serialize(message)` it is `Serialize(message, buffer)`.
+  * In C++, produces no noticable affect in most tests.
+* Cleanup time can be a *huge* cost in C++. This is the time taken to call the
+  (recursive) destructor tree. In the repeated_maps_ints case, destructors take
+  150% of the time of serialization+deserialization combined.
+  The C++ Arena provides value if only to reduce the cleanup time.
+* Direct struct access is so much nicer than getters and setters, and inconsistency
+  of the C++ API. And adjusting an existing field is much worse.. For example:
+  * Jai: `x = m.x`, `m.x = x`, `m.object = .{}`.
+    * Adjusting a field: `result.Avg.create_object /= REPEAT_COUNT;`
+  * C++: `x = m.get_X()`, `m.set_X(x)` for singular primitives, and `*m.mutable_object() = x` for other types.
+    * Adjusting a field: `result->mutable_avg()->set_create_object(result->avg().create_object() / REPEAT_COUNT);`
+* WHY does C++ protobuf rename your fields?! I want Avg to be capital, and C++
+  protoc converts it to lower case. It converts other languages to camelCase
+  and PascalCase too!
+
 ## Plots
 
 These plots show the time taken (e.g. to serialize or deserialize) in
-milliseconds. Lower is better.
+milliseconds, averaged over 15 consecutive runs. Lower is better.
 
 To generate the plots, build each of the sub-projects as per their readme file
 (for release builds), then run the release binary. This generates local test
 results file in protobuf binary format. The `analyse_results.jai` program loads these
 and generates mermaid plots which can be rendered in markdown (copy-pasted below).
+
+In the following plots, these definitions apply:
+* `Default` - using the default general purpose heap allocator
+* `Arena` - using arenas for memory allocations wherever supported
+* `Buffer` - using arenas AND re-using a sufficiently large serialization
+  storage when encoding new messages.
+
+Cleanup time is only shown for non-arena types, because the cleanup-time for arenas is 0ms.
 
 ```mermaid
 gantt
